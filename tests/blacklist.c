@@ -384,9 +384,8 @@ static void test_property_missing(void **state)
 {
 	static struct udev_device udev = { "sdb", { "ID_FOO", "ID_BAZ", "ID_BAR", "ID_SERIAL", NULL } };
 	conf.blist_property = blist_property_wwn;
-	expect_condlog(3, "sdb: blacklisted, udev property missing\n");
 	assert_int_equal(filter_property(&conf, &udev, 3, "ID_SERIAL"),
-			 MATCH_PROPERTY_BLIST_MISSING);
+			 MATCH_NOTHING);
 	assert_int_equal(filter_property(&conf, &udev, 3, "ID_BLAH"),
 			 MATCH_NOTHING);
 	assert_int_equal(filter_property(&conf, &udev, 3, ""),
@@ -478,9 +477,7 @@ static void test_filter_path_missing1(void **state)
 	conf.blist_device = blist_device_foo_bar;
 	conf.blist_protocol = blist_protocol_fcp;
 	conf.blist_wwid = blist_wwid_xyzzy;
-	expect_condlog(3, "sdb: blacklisted, udev property missing\n");
-	assert_int_equal(filter_path(&conf, &miss1_pp),
-			 MATCH_PROPERTY_BLIST_MISSING);
+	assert_int_equal(filter_path(&conf, &miss1_pp), MATCH_NOTHING);
 }
 
 /* This one matches the property whitelist, to test the other missing
