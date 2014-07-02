@@ -1468,9 +1468,14 @@ keywords. Both are regular expressions. For a full description of these keywords
 Regular expression for an udev property. All
 devices that have matching udev properties will be excluded/included.
 The handling of the \fIproperty\fR keyword is special,
-because devices \fBmust\fR have at least one whitelisted udev property;
+because if a property blacklist_exception is set, devices \fBmust\fR have at
+least one whitelisted udev property;
 otherwise they're treated as blacklisted, and the message
 "\fIblacklisted, udev property missing\fR" is displayed in the logs.
+For example, setting the property blacklist_exception to
+\fB(SCSI_IDENT_|ID_WWN)\fR, will cause well-behaved SCSI devices and devices
+that provide a WWN (World Wide Number) to be included, and all others to be
+excluded. This works to exclude most non-multipathable devices.
 .
 .RS
 .PP
@@ -1481,10 +1486,6 @@ Blacklisting by missing properties is only applied to devices which do have the
 property specified by \fIuid_attribute\fR (e.g. \fIID_SERIAL\fR)
 set. Previously, it was applied to every device, possibly causing devices to be
 blacklisted because of temporary I/O error conditions.
-.PP
-The default \fIblacklist exception\fR is: \fB(SCSI_IDENT_|ID_WWN)\fR, causing
-well-behaved SCSI devices and devices that provide a WWN (World Wide Number)
-to be included, and all others to be excluded.
 .RE
 .TP
 .B protocol
