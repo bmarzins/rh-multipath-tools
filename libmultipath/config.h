@@ -10,6 +10,7 @@
 
 #define ORIGIN_DEFAULT 0
 #define ORIGIN_CONFIG  1
+#define ORIGIN_NO_CONFIG 2
 
 enum devtypes {
 	DEV_NONE,

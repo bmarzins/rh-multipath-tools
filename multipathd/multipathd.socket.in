@@ -1,6 +1,7 @@
 [Unit]
 Description=multipathd control socket
 DefaultDependencies=no
+ConditionPathExists=/etc/multipath.conf
 ConditionKernelCommandLine=!nompath
 ConditionKernelCommandLine=!multipath=off
 ConditionVirtualization=!container
