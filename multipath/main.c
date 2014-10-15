@@ -842,11 +842,14 @@ main (int argc, char *argv[])
 	char *dev = NULL;
 	struct config *conf;
 	bool enable_foreign = false;
+	bool have_config;
+	struct stat buf;
 
 	libmultipath_init();
 	if (atexit(dm_lib_exit) || atexit(libmultipath_exit))
 		condlog(1, "failed to register cleanup handler for libmultipath: %m");
 	logsink = LOGSINK_STDERR_WITH_TIME;
+	have_config = (stat(DEFAULT_CONFIGFILE, &buf) == 0);
 	if (init_config(DEFAULT_CONFIGFILE))
 		exit(RTVL_FAIL);
 	if (atexit(uninit_config))
@@ -1097,6 +1100,9 @@ main (int argc, char *argv[])
 	while ((r = configure(conf, cmd, dev_type, dev)) == RTVL_RETRY)
 		condlog(3, "restart multipath configuration process");
 
+	if (!have_config && r == RTVL_OK &&
+            (cmd == CMD_LIST_SHORT || cmd == CMD_LIST_LONG))
+		r = RTVL_FAIL;
 out:
 	put_multipath_config(conf);
 	if (dev)
