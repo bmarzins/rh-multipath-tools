@@ -6,6 +6,7 @@ Wants=systemd-udevd-kernel.socket @MODPROBE_UNIT@
 After=systemd-udevd-kernel.socket @MODPROBE_UNIT@
 After=multipathd.socket systemd-remount-fs.service
 Before=initrd-cleanup.service
+ConditionPathExists=/etc/multipath.conf
 DefaultDependencies=no
 Conflicts=shutdown.target
 Conflicts=initrd-cleanup.service

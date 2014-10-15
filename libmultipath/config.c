@@ -959,6 +959,19 @@ int _init_config (const char *file, struct config *conf)
 		}
 		factorize_hwtable(conf->hwtable, builtin_hwtable_size, file);
 		validate_pctable(conf->overrides, 0, file);
+	} else {
+		condlog(0, "/etc/multipath.conf does not exist, blacklisting all devices.");
+		if (conf->blist_devnode == NULL) {
+			conf->blist_devnode = vector_alloc();
+			if (!conf->blist_devnode) {
+				condlog(0, "cannot allocate blacklist\n");
+				goto out;
+			}
+		}
+		if (store_ble(conf->blist_devnode, ".*", ORIGIN_NO_CONFIG)) {
+			condlog(0, "cannot store default no-config blacklist\n");
+			goto out;
+		}
 	}
 
 	conf->processed_main_config = 1;
