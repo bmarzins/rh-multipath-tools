@@ -1,0 +1,135 @@
+.TH MPATHCONF 8 "June 2010" "" "Linux Administrator's Manual"
+.SH NAME
+mpathconf - A tool for configuring device-mapper-multipath
+.SH SYNOPSIS
+.B mpathconf
+.RB [\| commands \|]
+.RB [\| options \|]
+.SH DESCRIPTION
+.B mpathconf
+is a utility that creates or modifies
+.B /etc/multipath.conf.
+It can enable or disable multipathing and configure some common options.
+.B mpathconf
+can also load the
+.B dm_multipath
+module, start and stop the
+.B multipathd
+daemon, and configure the
+.B multipathd
+service to start automatically or not. If
+.B mpathconf
+is called with no commands, it will display the current configuration, but
+will not create of modify
+.B /etc/multipath.conf
+
+The default options for mpathconf are
+.B --with_module
+The
+.B --with_multipathd
+option is not set by default.  Enabling multipathing will load the
+.B dm_multipath
+module but it will not immediately start it. This is so
+that users can manually edit their config file if necessary, before starting
+.B multipathd.
+
+If
+.B /etc/multipath.conf
+already exists, mpathconf will edit it. If it does not exist, mpathconf will
+create a default file with
+.B user_friendly_names
+set and
+.B find_multipaths
+set to \fByes\fP. To disable these, use the
+.B --user_friendly_names n
+and
+.B --find_multipaths n
+options
+.SH COMMANDS
+.TP
+.B --enable
+Removes any line that blacklists all device nodes from the
+.B /etc/multipath.conf
+blacklist section. Also, creates
+.B /etc/multipath.conf
+if it doesn't exist.
+.TP
+.B --disable
+Adds a line that blacklists all device nodes to the
+.B /etc/multipath.conf
+blacklist section. If no blacklist section exists, it will create one.
+.TP
+.B --allow \fB<device>\fP
+Modifies the \fB/etc/multipath/conf\fP blacklist to blacklist all
+wwids and the blacklist_exceptions to whitelist \fB<device>\fP. \fB<device>\fP
+can be in the form of MAJOR:MINOR, a wwid, or the name of a device-mapper
+device, either a multipath device, or any device on stacked on top of one or
+more multipath devices. This command can be used multiple times to allow
+multiple devices.  \fBNOTE:\fP This action will create a configuration file that
+mpathconf will not be able to revert back to its previous state. Because
+of this, \fB--outfile\fP is required when using \fB--allow\fP.
+.TP
+.B --user_friendly_names \fP { \fBy\fP | \fBn\fP }
+If set to \fBy\fP, this adds the line
+.B user_friendly_names yes
+to the
+.B /etc/multipath.conf
+defaults section. If set to \fBn\fP, this removes the line, if present. This
+command can be used along with any other command.
+.TP
+.B --find_multipaths\fP { \fByes\fP | \fBno\fP | \fBstrict\fP | \fBgreedy\fP | \fBsmart\fP }
+If set to \fB<value>\fP, this adds the line
+.B find_multipaths <value>
+to the
+.B /etc/multipath.conf
+defaults section. This command can be used along with any other command.
+\fBy\fP and \fBn\fP can be used instead of \fByes\fP and \fBno\fP.
+.TP
+.B --property_blacklist \fP { \fBy\fP | \fBn\fP }
+If set to \fBy\fP, this adds the line
+.B property "(SCSI_IDENT_|ID_WWN)"
+to the
+.B /etc/multipath.conf
+blacklist_exceptions section. If set to \fBn\fP, this removes the line, if
+present. This command can be used along with any other command.
+.TP
+.B --enable_foreign\fP { \fBy\fP | \fBn\fP }
+If set to \fBy\fP, this adds the line
+.B enable_foreign ".*"
+to the
+.B /etc/multipath.conf
+defaults section. if set to \fBn\fP, this removes the line, if present. This
+command can be used along with any other command.
+.TP
+.B --outfile \fB<filename>\fP
+Write the resulting multipath configuration to \fB<filename>\fP instead of
+\fB/etc/multipath.conf\fP.
+.SH OPTIONS
+.TP
+.B --with_module\fP { \fBy\fP | \fBn\fP }
+If set to \fBy\fP, this runs
+.B modprobe dm_multipath
+to install the multipath modules. This option only works with the
+.B --enable
+command. This option is set to \fBy\fP by default.
+.TP
+.B --with_multipathd { \fBy\fP | \fBn\fP }
+If set to \fBy\fP, this runs
+.B service multipathd start
+to start the multipathd daemon on \fB--enable\fP,
+.B service multipathd stop
+to stop the multipathd daemon on \fB--disable\fP, and
+.B service multipathd reload
+to reconfigure multipathd on \fB--user_frindly_names\fP and
+\fB--find_multipaths\fP.
+This option is set to \fBn\fP by default.
+.SH FILES
+.BR /etc/multipath.conf
+.SH "SEE ALSO"
+.BR multipath.conf (5),
+.BR modprobe (8),
+.BR multipath (8),
+.BR multipathd (8),
+.BR service (8),
+.SH AUTHOR
+Benjamin Marzinski <bmarzins@redhat.com>
