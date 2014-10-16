@@ -897,6 +897,8 @@ int _init_config (const char *file, struct config *conf)
 		factorize_hwtable(conf->hwtable, builtin_hwtable_size, file);
 	} else {
 		condlog(0, "/etc/multipath.conf does not exist, blacklisting all devices.");
+		condlog(0, "You can run \"/sbin/mpathconf --enable\" to create");
+		condlog(0, "/etc/multipath.conf. See man mpathconf(8) for more details");
 		if (conf->blist_devnode == NULL) {
 			conf->blist_devnode = vector_alloc();
 			if (!conf->blist_devnode) {
