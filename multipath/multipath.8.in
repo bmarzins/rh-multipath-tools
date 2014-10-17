@@ -64,7 +64,7 @@ multipath \- Device mapper target autoconfig.
 .B multipath
 .RB [\| \-v\ \c
 .IR level \|]
-.B -W
+.RB [\| \-A | \-W \|]
 .
 .LP
 .B multipath
@@ -144,6 +144,11 @@ device mapper, path checkers ...).
 .TP
 .B \-a
 Add the WWID for the specified device to the WWIDs file.
+.
+.TP
+.B \-A
+Add the WWIDs from any kernel command line \fImpath.wwid\fR parameters to the
+WWIDs file.
 .
 .TP
 .B \-w
