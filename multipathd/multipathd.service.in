@@ -19,6 +19,7 @@ StartLimitBurst=3
 [Service]
 Type=notify
 NotifyAccess=main
+ExecStartPre=-@BINDIR@/multipath -A
 ExecStart=@BINDIR@/multipathd -d -s
 ExecReload=@BINDIR@/multipathd reconfigure
 Restart=on-failure
