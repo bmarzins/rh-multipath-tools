@@ -17,6 +17,7 @@ ConditionVirtualization=!container
 [Service]
 Type=notify
 NotifyAccess=main
+ExecStartPre=-/sbin/multipath -A
 ExecStart=/sbin/multipathd -d -s
 ExecReload=/sbin/multipathd reconfigure
 TasksMax=infinity

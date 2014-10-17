@@ -120,7 +120,7 @@ usage (char * progname)
 	fprintf (stderr, "  %s [-v level] [-R retries] -F\n", progname);
 	fprintf (stderr, "  %s [-v level] [-l|-ll] [device]\n", progname);
 	fprintf (stderr, "  %s [-v level] [-a|-w] device\n", progname);
-	fprintf (stderr, "  %s [-v level] -W\n", progname);
+	fprintf (stderr, "  %s [-v level] [-A|-W]\n", progname);
 	fprintf (stderr, "  %s [-v level] [-i] [-c|-C] device\n", progname);
 	fprintf (stderr, "  %s [-v level] [-i] [-u|-U]\n", progname);
 	fprintf (stderr, "  %s [-h|-t|-T]\n", progname);
@@ -134,6 +134,8 @@ usage (char * progname)
 		"  -f      flush a multipath device map\n"
 		"  -F      flush all multipath device maps\n"
 		"  -a      add a device wwid to the wwids file\n"
+		"  -A      add devices from kernel command line mpath.wwids\n"
+		"          parameters to wwids file\n"
 		"  -c      check if a device should be a path in a multipath device\n"
 		"  -C      check if a multipath device has usable paths\n"
 		"  -q      allow queue_if_no_path when multipathd is not running\n"
@@ -446,6 +448,50 @@ static void cleanup_vecs(void)
 {
 	free_multipathvec(vecs.mpvec, KEEP_PATHS);
 	free_pathvec(vecs.pathvec, FREE_PATHS);
+}
+
+static int remember_cmdline_wwid(void)
+{
+	FILE *f = NULL;
+	char buf[LINE_MAX], *next, *ptr;
+	int ret = 0;
+
+	f = fopen("/proc/cmdline", "re");
+	if (!f) {
+		condlog(0, "can't open /proc/cmdline : %s", strerror(errno));
+		return -1;
+	}
+
+	if (!fgets(buf, sizeof(buf), f)) {
+		if (ferror(f))
+			condlog(0, "read of /proc/cmdline failed : %s",
+				strerror(errno));
+		else
+			condlog(0, "couldn't read /proc/cmdline");
+		fclose(f);
+		return -1;
+	}
+	fclose(f);
+	next = buf;
+	while((ptr = strstr(next, "mpath.wwid="))) {
+		ptr += 11;
+		next = strpbrk(ptr, " \t\n");
+		if (next) {
+			*next = '\0';
+			next++;
+		}
+		if (strlen(ptr)) {
+			if (remember_wwid(ptr) != 0)
+				ret = -1;
+		}
+		else {
+			condlog(0, "empty mpath.wwid kernel command line option");
+			ret = -1;
+		}
+		if (!next)
+			break;
+	}
+	return ret;
 }
 
 static int
@@ -861,7 +907,7 @@ main (int argc, char *argv[])
 		condlog(1, "failed to register cleanup handler for vecs: %m");
 	if (atexit(cleanup_bindings))
 		condlog(1, "failed to register cleanup handler for bindings: %m");
-	while ((arg = getopt(argc, argv, ":adDcChl::eFfM:v:p:b:BrR:itTquUwW")) != EOF ) {
+	while ((arg = getopt(argc, argv, ":aAdDcChl::eFfM:v:p:b:BrR:itTquUwW")) != EOF ) {
 		switch(arg) {
 		case 'v':
 			if (!isdigit(optarg[0])) {
@@ -932,6 +978,10 @@ main (int argc, char *argv[])
 		case 'T':
 			cmd = CMD_DUMP_CONFIG;
 			break;
+		case 'A':
+			if (remember_cmdline_wwid() != 0)
+				exit(RTVL_FAIL);
+			exit(RTVL_OK);
 		case 'h':
 			usage(argv[0]);
 			exit(RTVL_OK);
