@@ -55,7 +55,7 @@ endif
 prefix		=
 exec_prefix	= $(prefix)
 usr_prefix	= $(prefix)
-bindir		= $(exec_prefix)/sbin
+bindir		= $(exec_prefix)/usr/sbin
 libudevdir	= $(prefix)/$(SYSTEMDPATH)/udev
 udevrulesdir	= $(libudevdir)/rules.d
 multipathdir	= $(TOPDIR)/libmultipath
