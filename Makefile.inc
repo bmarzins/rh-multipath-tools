@@ -34,7 +34,7 @@ endif
 # Paths. All these can be overridden on the "make" command line.
 prefix		:=
 # Prefix for binaries
-exec_prefix	:= $(prefix)
+exec_prefix	:= $(prefix)/usr
 # Prefix for non-essential libraries (libdmmp)
 usr_prefix	:= $(if $(prefix),$(prefix),/usr)
 # Prefix for configuration files (multipath.conf)
