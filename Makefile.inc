@@ -92,16 +92,28 @@ TEST_CC_OPTION = $(shell \
 		echo "$(2)"; \
 	fi)
 
-STACKPROT := $(call TEST_CC_OPTION,-fstack-protector-strong,-fstack-protector)
 ERROR_DISCARDED_QUALIFIERS := $(call TEST_CC_OPTION,-Werror=discarded-qualifiers,)
 WNOCLOBBERED := $(call TEST_CC_OPTION,-Wno-clobbered -Wno-error=clobbered,)
 WFORMATOVERFLOW := $(call TEST_CC_OPTION,-Wformat-overflow=2,)
 
-OPTFLAGS	:= -O2 -g $(STACKPROT) --param=ssp-buffer-size=4
-WARNFLAGS	:= -Werror -Wall -Wextra -Wformat=2 $(WFORMATOVERFLOW) -Werror=implicit-int \
+ifndef RPM_OPT_FLAGS
+	STACKPROT := $(call TEST_CC_OPTION,-fstack-protector-strong,-fstack-protector)
+	OPTFLAGS := -O2 -g -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions \
+		    $(STACKPROT) -grecord-gcc-switches \
+		    -fasynchronous-unwind-tables --param=ssp-buffer-size=4
+	ifeq ($(shell test -f /usr/lib/rpm/redhat/redhat-hardened-cc1 && echo 1),1)
+		OPTFLAGS += -specs=/usr/lib/rpm/redhat/redhat-hardened-cc1
+	endif
+	ifeq ($(shell test -f /usr/lib/rpm/redhat/redhat-annobin-cc1 && echo 1),1)
+		OPTFLAGS += -specs=/usr/lib/rpm/redhat/redhat-annobin-cc1
+	endif
+else
+	OPTFLAGS := $(RPM_OPT_FLAGS) --param=ssp-buffer-size=4
+endif
+WARNFLAGS	:= -Werror -Wextra -Wformat=2 $(WFORMATOVERFLOW) -Werror=implicit-int \
 		  -Werror=implicit-function-declaration -Werror=format-security \
-		  $(WNOCLOBBERED) -Werror=cast-qual $(ERROR_DISCARDED_QUALIFIERS)
-CPPFLAGS	:= -Wp,-D_FORTIFY_SOURCE=2 
+		  $(WNOCLOBBERED) -Werror=cast-qual $(ERROR_DISCARDED_QUALIFIERS) \
+		  -Wstrict-prototypes
 CFLAGS		:= --std=gnu99 $(CFLAGS) $(OPTFLAGS) $(WARNFLAGS) -pipe \
 		   -DBIN_DIR=\"$(bindir)\" -DLIB_STRING=\"${LIB}\" -DRUN_DIR=\"${RUN}\" \
 		   -MMD -MP
@@ -139,4 +151,4 @@ check_file = $(shell \
 
 %.o:	%.c
 	@echo building $@ because of $?
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) -c -o $@ $<
