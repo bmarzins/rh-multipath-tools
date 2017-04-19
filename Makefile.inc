@@ -101,11 +101,23 @@ SYSTEMD_LIBDEPS := $(if $(SYSTEMD),$(if $(shell test $(SYSTEMD) -gt 209 && echo 
 MODPROBE_UNIT := $(shell test "0$(SYSTEMD)" -lt 245 2>/dev/null || \
 			echo "modprobe@dm_multipath.service")
 
-OPTFLAGS	:= -O2 -g $(STACKPROT) --param=ssp-buffer-size=4
-WARNFLAGS	:= -Werror -Wall -Wextra -Wformat=2 $(WFORMATOVERFLOW) -Werror=implicit-int \
+ifndef RPM_OPT_FLAGS
+	OPTFLAGS := -O2 -g $(STACKPROT) --param=ssp-buffer-size=4 \
+		    -Wall $(FORTIFY_OPT) -fexceptions -grecord-gcc-switches \
+		    -fasynchronous-unwind-tables
+	ifeq ($(shell test -f /usr/lib/rpm/redhat/redhat-hardened-cc1 && echo 1),1)
+		OPTFLAGS += -specs=/usr/lib/rpm/redhat/redhat-hardened-cc1
+	endif
+	ifeq ($(shell test -f /usr/lib/rpm/redhat/redhat-annobin-cc1 && echo 1),1)
+		OPTFLAGS += -specs=/usr/lib/rpm/redhat/redhat-annobin-cc1
+	endif
+else
+	OPTFLAGS := $(RPM_OPT_FLAGS) --param=ssp-buffer-size=4
+endif
+WARNFLAGS	:= -Werror -Wextra -Wformat=2 $(WFORMATOVERFLOW) -Werror=implicit-int \
 		  -Werror=implicit-function-declaration -Werror=format-security \
-		  $(WNOCLOBBERED) -Werror=cast-qual $(ERROR_DISCARDED_QUALIFIERS) $(W_URCU_TYPE_LIMITS)
-CPPFLAGS	:= $(FORTIFY_OPT) $(CPPFLAGS) $(D_URCU_VERSION) \
+		  $(WNOCLOBBERED) -Werror=cast-qual $(ERROR_DISCARDED_QUALIFIERS) $(W_URCU_TYPE_LIMITS) -Wstrict-prototypes
+CPPFLAGS	:= $(CPPFLAGS) $(D_URCU_VERSION) \
 		   -D_FILE_OFFSET_BITS=64 \
 		   -DBIN_DIR=\"$(bindir)\" -DMULTIPATH_DIR=\"$(plugindir)\" \
 		   -DRUNTIME_DIR=\"$(runtimedir)\" -DCONFIG_DIR=\"$(configdir)\" \
@@ -115,7 +127,7 @@ CFLAGS		:= -std=gnu99 $(CFLAGS) $(OPTFLAGS) $(WARNFLAGS) -pipe
 BIN_CFLAGS	:= -fPIE -DPIE
 LIB_CFLAGS	:= -fPIC
 SHARED_FLAGS	:= -shared
-LDFLAGS		:= $(LDFLAGS) -Wl,-z,relro -Wl,-z,now -Wl,-z,defs
+LDFLAGS		:= $(LDFLAGS) $(RPM_LD_FLAGS) -Wl,-z,relro -Wl,-z,now -Wl,-z,defs
 BIN_LDFLAGS	:= -pie
 
 # Source code directories. Don't modify.
