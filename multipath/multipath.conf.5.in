@@ -1225,7 +1225,7 @@ as non-multipath and passed on to upper layers.
 \fBNote:\fR this may cause delays during device detection if
 there are single-path devices which aren\'t blacklisted.
 .TP
-The default is: \fBstrict\fR
+The default is: \fBoff\fR
 .RE
 .
 .
