@@ -76,7 +76,7 @@ struct argconfig_commandline_options {
 extern "C" {
 #endif
 
-typedef void argconfig_help_func();
+typedef void argconfig_help_func(void);
 void argconfig_append_usage(const char *str);
 void argconfig_print_help(const char *program_desc,
 			  const struct argconfig_commandline_options *options);
