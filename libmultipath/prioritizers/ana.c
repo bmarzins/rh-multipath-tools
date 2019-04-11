@@ -24,6 +24,7 @@
 #include "prio.h"
 #include "util.h"
 #include "structs.h"
+#include "sysfs.h"
 
 enum {
 	ANA_ERR_GETCTRL_FAILED		= 1,
@@ -36,6 +37,7 @@ enum {
 	ANA_ERR_GETNS_FAILED,
 	ANA_ERR_NO_MEMORY,
 	ANA_ERR_NO_INFORMATION,
+	ANA_ERR_INVALID_STATE,
 };
 
 static const char *ana_errmsg[] = {
@@ -49,6 +51,7 @@ static const char *ana_errmsg[] = {
 	[ANA_ERR_GETNS_FAILED]		= "couldn't get namespace info",
 	[ANA_ERR_NO_MEMORY]		= "out of memory",
 	[ANA_ERR_NO_INFORMATION]	= "invalid fd",
+	[ANA_ERR_INVALID_STATE]		= "invalid state",
 };
 
 static const char *anas_string[] = {
@@ -105,6 +108,27 @@ static int get_ana_state(__u32 nsid, __u32 anagrpid, void *ana_log,
 
 	}
 	return -ANA_ERR_GETANAS_NOTFOUND;
+}
+
+static int get_ana_info_sysfs(struct path *pp)
+{
+	char state[32];
+
+	if (!pp->udev || sysfs_attr_get_value(pp->udev, "ana_state", state,
+					      sizeof(state)) <= 0)
+		return -ANA_ERR_NO_INFORMATION;
+
+	if (strcmp(state, "optimized") == 0)
+		return NVME_ANA_OPTIMIZED;
+	if (strcmp(state, "non-optimized") == 0)
+		return NVME_ANA_NONOPTIMIZED;
+	if (strcmp(state, "inaccessible") == 0)
+		return NVME_ANA_INACCESSIBLE;
+	if (strcmp(state, "persistent-loss") == 0)
+		return NVME_ANA_PERSISTENT_LOSS;
+	if (strcmp(state, "change") == 0)
+		return NVME_ANA_CHANGE;
+	return -ANA_ERR_INVALID_STATE;
 }
 
 static int get_ana_info(struct path * pp)
@@ -209,8 +233,11 @@ int getprio(struct path *pp, __attribute__((unused)) char *args)
 
 	if (pp->fd < 0)
 		rc = -ANA_ERR_NO_INFORMATION;
-	else
-		rc = get_ana_info(pp);
+	else {
+		rc = get_ana_info_sysfs(pp);
+		if (rc < 0)
+			rc = get_ana_info(pp);
+	}
 
 	switch (rc) {
 	case NVME_ANA_OPTIMIZED:
