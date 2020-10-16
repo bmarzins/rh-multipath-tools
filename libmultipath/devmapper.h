@@ -33,13 +33,10 @@ enum {
 	DMP_NOT_FOUND,
 };
 
-void dm_init(int verbosity);
 int dm_prereq(unsigned int *v);
 void skip_libmp_dm_init(void);
 void libmp_udev_set_sync_support(int on);
 struct dm_task *libmp_dm_task_create(int task);
-int dm_drv_version (unsigned int * version);
-int dm_tgt_version (unsigned int * version, char * str);
 int dm_simplecmd_flush (int, const char *, uint16_t);
 int dm_simplecmd_noflush (int, const char *, uint16_t);
 int dm_addmap_create (struct multipath *mpp, char *params);
@@ -84,6 +81,14 @@ struct multipath *dm_get_multipath(const char *name);
 	((v[0] == minv[0]) && (v[1] > minv[1])) || \
 	((v[0] == minv[0]) && (v[1] == minv[1]) && (v[2] >= minv[2])) \
 )
+
+enum {
+	DM_LIBRARY_VERSION,
+	DM_KERNEL_VERSION,
+	DM_MPATH_TARGET_VERSION,
+	MULTIPATH_VERSION
+};
+int libmp_get_version(int which, unsigned int version[3]);
 
 #define dm_log_error(lvl, cmd, dmt)			      \
 	condlog(lvl, "%s: libdm task=%d error: %s", __func__, \
