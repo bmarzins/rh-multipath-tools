@@ -1135,12 +1135,9 @@ parse_vpd_pg83(const unsigned char *in, size_t in_len,
 				naa_prio = 7;
 				break;
 			case 2:
-				/* IEEE Extended: Prio 6 */
-				naa_prio = 6;
-				break;
 			case 3:
-				/* IEEE Locally assigned: Prio 1 */
-				naa_prio = 1;
+				/* IEEE Extended or Locally assigned: Prio 6 */
+				naa_prio = 6;
 				break;
 			default:
 				/* Default: no priority */
@@ -1156,17 +1153,6 @@ parse_vpd_pg83(const unsigned char *in, size_t in_len,
 			/* EUI-64: Prio 4 */
 			if (prio < 4) {
 				prio = 4;
-				vpd = d;
-			}
-			break;
-		case 0x8:
-			/* SCSI Name: Prio 3 */
-			if (memcmp(d + 4, "eui.", 4) &&
-			    memcmp(d + 4, "naa.", 4) &&
-			    memcmp(d + 4, "iqn.", 4))
-				break;
-			if (prio < 3) {
-				prio = 3;
 				vpd = d;
 			}
 			break;
