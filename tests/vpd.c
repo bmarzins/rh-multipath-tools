@@ -232,11 +232,13 @@ static const char * const str_prefix[] = {
 	[STR_IQN] = "iqn.",
 };
 
+#if 0
 static const char byte0[] = {
 	[STR_EUI] = '2',
 	[STR_NAA] = '3',
 	[STR_IQN] = '8',
 };
+#endif
 
 /**
  * create_scsi_string_desc() - create a SCSI name string descriptor.
@@ -823,6 +825,7 @@ make_test_vpd_naa(2, 18);
 make_test_vpd_naa(2, 17);
 make_test_vpd_naa(2, 16);
 
+#if 0
 /* SCSI Name string: EUI64, WWID size: 17 */
 make_test_vpd_str(0, 20, 18);
 make_test_vpd_str(0, 20, 17);
@@ -865,6 +868,7 @@ make_test_vpd_prespc3(34);
 make_test_vpd_prespc3(33);
 make_test_vpd_prespc3(32);
 make_test_vpd_prespc3(20);
+#endif
 
 static int test_vpd(void)
 {
@@ -973,6 +977,7 @@ static int test_vpd(void)
 		cmocka_unit_test(test_vpd_naa_2_18),
 		cmocka_unit_test(test_vpd_naa_2_17),
 		cmocka_unit_test(test_vpd_naa_2_16),
+/*
 		cmocka_unit_test(test_vpd_str_0_20_18),
 		cmocka_unit_test(test_vpd_str_0_20_17),
 		cmocka_unit_test(test_vpd_str_0_20_16),
@@ -1002,6 +1007,7 @@ static int test_vpd(void)
 		cmocka_unit_test(test_vpd_prespc3_33),
 		cmocka_unit_test(test_vpd_prespc3_32),
 		cmocka_unit_test(test_vpd_prespc3_20),
+*/
 	};
 	return cmocka_run_group_tests(tests, setup, teardown);
 }
