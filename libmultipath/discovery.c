@@ -1221,13 +1221,9 @@ parse_vpd_pg83(const unsigned char *in, size_t in_len,
 				good_len = 8;
 				break;
 			case 2:
-				/* IEEE Extended: Prio 6 */
-				new_prio = 6;
-				good_len = 8;
-				break;
 			case 3:
-				/* IEEE Locally assigned: Prio 1 */
-				new_prio = 1;
+				/* IEEE Extended or Locally assigned: Prio 6 */
+				new_prio = 6;
 				good_len = 8;
 				break;
 			default:
@@ -1245,10 +1241,6 @@ parse_vpd_pg83(const unsigned char *in, size_t in_len,
 			break;
 		case 0x8:
 			/* SCSI Name: Prio 3 */
-			invalid = (d[3] < 4 || (memcmp(d + 4, "eui.", 4) &&
-						memcmp(d + 4, "naa.", 4) &&
-						memcmp(d + 4, "iqn.", 4)));
-			new_prio = 3;
 			break;
 		case 0x1:
 			/* T-10 Vendor ID: Prio 2 */
