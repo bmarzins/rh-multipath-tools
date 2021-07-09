@@ -240,7 +240,7 @@ function validate_args
 		echo "--enable_foreign must be either 'y' or 'n'"
 		exit 1
 	fi
-	if [ -z "$ENABLE" -a -z "$FIND" -a -z "$FRIENDLY" -a -z "$PROPERTY" ]; then
+	if [ -z "$ENABLE" -a -z "$FIND" -a -z "$FRIENDLY" -a -z "$PROPERTY" -a -z "$FOREIGN" ]; then
 		SHOW_STATUS=1
 	fi
 	if [ -n "$MODULE" ] && [ "$MODULE" != "y" -a "$MODULE" != "n" ]; then
@@ -315,46 +315,50 @@ if [ "$MULTIPATHD" = "y" ]; then
 fi
 
 if [ "$HAVE_BLACKLIST" = "1" ]; then
-	if sed -n '/^blacklist[[:space:]]*{/,/^}/ p' $TMPFILE | grep -q "^[[:space:]]*devnode \"\.\?\*\"" ; then
+	if sed -n '/^blacklist[[:space:]]*{/,/^}/ p' $TMPFILE | grep -q "^[[:space:]]*devnode[[:space:]][[:space:]]*\"\.\?\*\"" ; then
 		HAVE_DISABLE=1
-	elif sed -n '/^blacklist[[:space:]]*{/,/^}/ p' $TMPFILE | grep -q "^[[:space:]]*#[[:space:]]*devnode \"\.\?\*\"" ; then
+	elif sed -n '/^blacklist[[:space:]]*{/,/^}/ p' $TMPFILE | grep -q "^[[:space:]]*#[[:space:]]*devnode[[:space:]][[:space:]]*\"\.\?\*\"" ; then
 		HAVE_DISABLE=0
 	fi
 fi
 
 if [ "$HAVE_BLACKLIST" = "1" ]; then
-	if sed -n '/^blacklist[[:space:]]*{/,/^}/ p' $TMPFILE | grep -q "^[[:space:]]*wwid \"\.\?\*\"" ; then
+	if sed -n '/^blacklist[[:space:]]*{/,/^}/ p' $TMPFILE | grep -q "^[[:space:]]*wwid[[:space:]][[:space:]]*\"\.\?\*\"" ; then
 		HAVE_WWID_DISABLE=1
-	elif sed -n '/^blacklist[[:space:]]*{/,/^}/ p' $TMPFILE | grep -q "^[[:space:]]*#[[:space:]]*wwid \"\.\?\*\"" ; then
+	elif sed -n '/^blacklist[[:space:]]*{/,/^}/ p' $TMPFILE | grep -q "^[[:space:]]*#[[:space:]]*wwid[[:space:]][[:space:]]*\"\.\?\*\"" ; then
 		HAVE_WWID_DISABLE=0
 	fi
 fi
 
 if [ "$HAVE_DEFAULTS" = "1" ]; then
-	HAVE_FIND=`sed -n '/^defaults[[:space:]]*{/,/^}/ p' $TMPFILE | sed -n 's/^[[:blank:]]*find_multipaths[[:blank:]]*\([^[:blank:]]*\).*$/\1/p' | sed -n 1p`
+	HAVE_FIND=`sed -n '/^defaults[[:space:]]*{/,/^}/ p' $TMPFILE | sed -n 's/^[[:blank:]]*find_multipaths[[:blank:]][[:blank:]]*\([^[:blank:]]*\).*$/\1/p' | sed -n 1p`
 	if [ "$HAVE_FIND" = "1" ]; then
 		HAVE_FIND="yes"
 	elif [ "$HAVE_FIND" = "0" ]; then
 		HAVE_FIND="no"
 	fi
-	if sed -n '/^defaults[[:space:]]*{/,/^}/ p' $TMPFILE | grep -q "^[[:space:]]*user_friendly_names[[:space:]]*\(yes\|1\)" ; then
+	if sed -n '/^defaults[[:space:]]*{/,/^}/ p' $TMPFILE | grep -q "^[[:space:]]*user_friendly_names[[:space:]][[:space:]]*\(yes\|1\)" ; then
 		HAVE_FRIENDLY=1
-	elif sed -n '/^defaults[[:space:]]*{/,/^}/ p' $TMPFILE | grep -q "^[[:space:]]*user_friendly_names[[:space:]]*\(no\|0\)" ; then
+	elif sed -n '/^defaults[[:space:]]*{/,/^}/ p' $TMPFILE | grep -q "^[[:space:]]*user_friendly_names[[:space:]][[:space:]]*\(no\|0\)" ; then
 		HAVE_FRIENDLY=0
 	fi
 	if sed -n '/^defaults[[:space:]]*{/,/^}/ p' $TMPFILE | grep -q "^[[:space:]]*#[[:space:]]*enable_foreign" ; then
 		HAVE_FOREIGN=0
-	elif sed -n '/^defaults[[:space:]]*{/,/^}/ p' $TMPFILE | grep -q "^[[:space:]]*enable_foreign[[:space:]]*\"\^\$\"" ; then
+	elif sed -n '/^defaults[[:space:]]*{/,/^}/ p' $TMPFILE | grep -q "^[[:space:]]*enable_foreign[[:space:]][[:space:]]*\"\.\*\"" ; then
 		HAVE_FOREIGN=1
-	elif sed -n '/^defaults[[:space:]]*{/,/^}/ p' $TMPFILE | grep -q "^[[:space:]]*enable_foreign" ; then
+	elif sed -n '/^defaults[[:space:]]*{/,/^}/ p' $TMPFILE | grep -q "^[[:space:]]*enable_foreign[[:space:]][[:space:]]*\"\^\$\"" ; then
 		HAVE_FOREIGN=2
+	elif sed -n '/^defaults[[:space:]]*{/,/^}/ p' $TMPFILE | grep -q "^[[:space:]]*enable_foreign[[:space:]][[:space:]]*\"NONE\"" ; then
+		HAVE_FOREIGN=2
+	elif sed -n '/^defaults[[:space:]]*{/,/^}/ p' $TMPFILE | grep -q "^[[:space:]]*enable_foreign" ; then
+		HAVE_FOREIGN=3
 	fi
 fi
 
 if [ "$HAVE_EXCEPTIONS" = "1" ]; then
-	if sed -n '/^blacklist_exceptions[[:space:]]*{/,/^}/ p' $TMPFILE | grep -q "^[[:space:]]*property[[:space:]]*\"(SCSI_IDENT_|ID_WWN)\"" ; then
+	if sed -n '/^blacklist_exceptions[[:space:]]*{/,/^}/ p' $TMPFILE | grep -q "^[[:space:]]*property[[:space:]][[:space:]]*\"(SCSI_IDENT_|ID_WWN)\"" ; then
                 HAVE_PROPERTY=1
-        elif sed -n '/^blacklist_exceptions[[:space:]]*{/,/^}/ p' $TMPFILE | grep -q "^[[:space:]]*#[[:space:]]*property[[:space:]]*\"(SCSI_IDENT_|ID_WWN)\"" ; then
+        elif sed -n '/^blacklist_exceptions[[:space:]]*{/,/^}/ p' $TMPFILE | grep -q "^[[:space:]]*#[[:space:]]*property[[:space:]][[:space:]]*\"(SCSI_IDENT_|ID_WWN)\"" ; then
                 HAVE_PROPERTY=0
         fi
 fi
@@ -381,8 +385,10 @@ if [ -n "$SHOW_STATUS" ]; then
 		echo "default property blacklist is enabled"
 	fi
 	if [ -z "$HAVE_FOREIGN" -o "$HAVE_FOREIGN" = 0 ]; then
-		echo "enable_foreign is not set (all foreign multipath devices will be shown)"
+		echo "enable_foreign is not set (no foreign multipath devices will be shown)"
 	elif [ "$HAVE_FOREIGN" = 1 ]; then
+		echo "enable_foreign is set (all foreign multipath devices will be shown)"
+	elif [ "$HAVE_FOREIGN" = 2 ]; then
 		echo "enable_foreign is set (no foreign multipath devices will be shown)"
 	else
 		echo "enable_foreign is set (foreign multipath devices may not be shown)"
@@ -427,14 +433,14 @@ fi
 
 if [ "$ENABLE" = 2 ]; then
 	if [ "$HAVE_DISABLE" = 1 ]; then
-		sed -i '/^blacklist[[:space:]]*{/,/^}/ s/^[[:space:]]*devnode \"\.\?\*\"/#	devnode ".*"/' $TMPFILE
+		sed -i '/^blacklist[[:space:]]*{/,/^}/ s/^[[:space:]]*devnode[[:space:]][[:space:]]*\"\.\?\*\"/#	devnode ".*"/' $TMPFILE
 	fi
 	if [ -z "$HAVE_WWID_DISABLE" ]; then
 		sed -i '/^blacklist[[:space:]]*{/ a\
 	wwid ".*"
 ' $TMPFILE
 	elif [ "$HAVE_WWID_DISABLE" = 0 ]; then
-		sed -i '/^blacklist[[:space:]]*{/,/^}/ s/^[[:space:]]*#[[:space:]]*wwid \"\.\?\*\"/	wwid ".*"/' $TMPFILE
+		sed -i '/^blacklist[[:space:]]*{/,/^}/ s/^[[:space:]]*#[[:space:]]*wwid[[:space:]][[:space:]]*\"\.\?\*\"/	wwid ".*"/' $TMPFILE
 	fi
 	if [ "$HAVE_EXCEPTIONS" = 1 ]; then
 		sed -i '/^blacklist_exceptions[[:space:]]*{/,/^}/ {/^[[:space:]]*wwid/ d}' $TMPFILE
@@ -448,7 +454,7 @@ _EOF_
 	add_blacklist_exceptions
 elif [ "$ENABLE" = 1 ]; then
 	if [ "$HAVE_DISABLE" = 1 ]; then
-		sed -i '/^blacklist[[:space:]]*{/,/^}/ s/^[[:space:]]*devnode \"\.\?\*\"/#	devnode ".*"/' $TMPFILE
+		sed -i '/^blacklist[[:space:]]*{/,/^}/ s/^[[:space:]]*devnode[[:space:]][[:space:]]*\"\.\?\*\"/#	devnode ".*"/' $TMPFILE
 	fi
 elif [ "$ENABLE" = 0 ]; then
 	if [ -z "$HAVE_DISABLE" ]; then
@@ -456,7 +462,7 @@ elif [ "$ENABLE" = 0 ]; then
 	devnode ".*"
 ' $TMPFILE
 	elif [ "$HAVE_DISABLE" = 0 ]; then
-		sed -i '/^blacklist[[:space:]]*{/,/^}/ s/^[[:space:]]*#[[:space:]]*devnode \"\.\?\*\"/	devnode ".*"/' $TMPFILE
+		sed -i '/^blacklist[[:space:]]*{/,/^}/ s/^[[:space:]]*#[[:space:]]*devnode[[:space:]][[:space:]]*\"\.\?\*\"/	devnode ".*"/' $TMPFILE
 	fi
 fi
 
@@ -467,14 +473,14 @@ if [ -n "$FIND" ]; then
 ' $TMPFILE
 		CHANGED_CONFIG=1
 	elif [ "$FIND" != "$HAVE_FIND" ]; then
-		sed -i '/^defaults[[:space:]]*{/,/^}/ s/^[[:blank:]]*find_multipaths[[:blank:]]*[^[:blank:]]*/	find_multipaths '"$FIND"'/' $TMPFILE
+		sed -i '/^defaults[[:space:]]*{/,/^}/ s/^[[:blank:]]*find_multipaths[[:blank:]][[:blank:]]*[^[:blank:]]*/	find_multipaths '"$FIND"'/' $TMPFILE
 		CHANGED_CONFIG=1
 	fi
 fi
 
 if [ "$FRIENDLY" = "n" ]; then
 	if [ "$HAVE_FRIENDLY" = 1 ]; then
-		sed -i '/^defaults[[:space:]]*{/,/^}/ s/^[[:space:]]*user_friendly_names[[:space:]]*\(yes\|1\)/	user_friendly_names no/' $TMPFILE
+		sed -i '/^defaults[[:space:]]*{/,/^}/ s/^[[:space:]]*user_friendly_names[[:space:]][[:space:]]*\(yes\|1\)/	user_friendly_names no/' $TMPFILE
 		CHANGED_CONFIG=1
 	fi
 elif [ "$FRIENDLY" = "y" ]; then
@@ -484,14 +490,14 @@ elif [ "$FRIENDLY" = "y" ]; then
 ' $TMPFILE
 		CHANGED_CONFIG=1
 	elif [ "$HAVE_FRIENDLY" = 0 ]; then
-		sed -i '/^defaults[[:space:]]*{/,/^}/ s/^[[:space:]]*user_friendly_names[[:space:]]*\(no\|0\)/	user_friendly_names yes/' $TMPFILE
+		sed -i '/^defaults[[:space:]]*{/,/^}/ s/^[[:space:]]*user_friendly_names[[:space:]][[:space:]]*\(no\|0\)/	user_friendly_names yes/' $TMPFILE
 		CHANGED_CONFIG=1
 	fi
 fi
 
 if [ "$PROPERTY" = "n" ]; then
 	if [ "$HAVE_PROPERTY" = 1 ]; then
-		sed -i '/^blacklist_exceptions[[:space:]]*{/,/^}/ s/^[[:space:]]*property[[:space:]]*\"(SCSI_IDENT_|ID_WWN)\"/#	property \"(SCSI_IDENT_|ID_WWN)\"/' $TMPFILE
+		sed -i '/^blacklist_exceptions[[:space:]]*{/,/^}/ s/^[[:space:]]*property[[:space:]][[:space:]]*\"(SCSI_IDENT_|ID_WWN)\"/#	property \"(SCSI_IDENT_|ID_WWN)\"/' $TMPFILE
 		CHANGED_CONFIG=1
 	fi
 elif [ "$PROPERTY" = "y" ]; then
@@ -501,24 +507,24 @@ elif [ "$PROPERTY" = "y" ]; then
 ' $TMPFILE
 		CHANGED_CONFIG=1
 	elif [ "$HAVE_PROPERTY" = 0 ]; then
-		sed -i '/^blacklist_exceptions[[:space:]]*{/,/^}/ s/^[[:space:]]*#[[:space:]]*property[[:space:]]*\"(SCSI_IDENT_|ID_WWN)\"/	property \"(SCSI_IDENT_|ID_WWN)\"/' $TMPFILE
+		sed -i '/^blacklist_exceptions[[:space:]]*{/,/^}/ s/^[[:space:]]*#[[:space:]]*property[[:space:]][[:space:]]*\"(SCSI_IDENT_|ID_WWN)\"/	property \"(SCSI_IDENT_|ID_WWN)\"/' $TMPFILE
 		CHANGED_CONFIG=1
 	fi
 fi
 
-if [ "$FOREIGN" = "y" ]; then
-	if [ "$HAVE_FOREIGN" = 1 -o "$HAVE_FOREIGN" = 2 ]; then
+if [ "$FOREIGN" = "n" ]; then
+	if [ "$HAVE_FOREIGN" = 1 -o "$HAVE_FOREIGN" = 3 ]; then
 		sed -i '/^defaults[[:space:]]*{/,/^}/ s/^[[:space:]]*enable_foreign/#	enable_foreign/' $TMPFILE
 		CHANGED_CONFIG=1
 	fi
-elif [ "$FOREIGN" = "n" ]; then
+elif [ "$FOREIGN" = "y" ]; then
 	if [ -z "$HAVE_FOREIGN" ]; then
 		sed -i '/^defaults[[:space:]]*{/ a\
-	enable_foreign "^$"
+	enable_foreign ".*"
 ' $TMPFILE
 		CHANGED_CONFIG=1
-	elif [ "$HAVE_FOREIGN" = 0 -o "$HAVE_FOREIGN" = 2 ]; then
-		sed -i '/^defaults[[:space:]]*{/,/^}/ s/^[[:space:]]*#\?[[:space:]]*enable_foreign.*$/	enable_foreign "^$"/' $TMPFILE
+	elif [ "$HAVE_FOREIGN" = 0 -o "$HAVE_FOREIGN" = 2 -o "$HAVE_FOREIGN" = 3 ]; then
+		sed -i '/^defaults[[:space:]]*{/,/^}/ s/^[[:space:]]*#\?[[:space:]]*enable_foreign.*$/	enable_foreign ".*"/' $TMPFILE
 		CHANGED_CONFIG=1
 	fi
 fi
