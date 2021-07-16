@@ -182,6 +182,7 @@ get_dm_mpvec (enum mpath_cmds cmd, vector curmp, vector pathvec, char * refwwid)
 	int i;
 	struct multipath * mpp;
 	int flags = (cmd == CMD_LIST_SHORT ? DI_NOIO : DI_ALL);
+	bool maps_present = false;
 
 	if (dm_get_maps(curmp))
 		return 1;
@@ -214,11 +215,15 @@ get_dm_mpvec (enum mpath_cmds cmd, vector curmp, vector pathvec, char * refwwid)
 
 		if (cmd == CMD_CREATE)
 			reinstate_paths(mpp);
+
+		maps_present = true;
 	}
 
 	if (cmd == CMD_LIST_SHORT || cmd == CMD_LIST_LONG)
 		print_foreign_topology(libmp_verbosity);
 
+	if (maps_present && !check_daemon())
+		condlog(2, "multipath devices exist, but multipathd service is not running");
 	return 0;
 }
 

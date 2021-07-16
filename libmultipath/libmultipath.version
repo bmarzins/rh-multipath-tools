@@ -274,3 +274,8 @@ global:
 local:
 	*;
 };
+
+LIBMULTIPATH_5.1.0 {
+global:
+	check_daemon;
+} LIBMULTIPATH_5.0.0;
