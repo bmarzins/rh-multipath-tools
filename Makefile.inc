@@ -16,7 +16,7 @@ READLINE :=
 
 # List of scsi device handler modules to load on boot, e.g.
 # SCSI_DH_MODULES_PRELOAD := scsi_dh_alua scsi_dh_rdac
-SCSI_DH_MODULES_PRELOAD :=
+SCSI_DH_MODULES_PRELOAD := scsi_dh_alua scsi_dh_emc scsi_dh_rdac
 
 EXTRAVERSION := $(shell rev=$$(git rev-parse --short=7 HEAD 2>/dev/null); echo $${rev:+-g$$rev})
 
