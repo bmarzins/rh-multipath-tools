@@ -16,7 +16,7 @@ READLINE :=
 
 # List of scsi device handler modules to load on boot, e.g.
 # SCSI_DH_MODULES_PRELOAD := scsi_dh_alua scsi_dh_rdac
-SCSI_DH_MODULES_PRELOAD :=
+SCSI_DH_MODULES_PRELOAD := scsi_dh_alua scsi_dh_emc scsi_dh_rdac
 
 # Multipathd scheduling priority. Set value from 1 to 99 to make multipathd
 # change its scheduling policy to SCHED_RR and its priority to the specified
