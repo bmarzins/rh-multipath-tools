@@ -1,0 +1,145 @@
+#!/bin/bash
+#
+# Copyright (C) 2023 Red Hat, Inc. All rights reserved.
+#
+# This file is part of the device-mapper-multipath package.
+#
+# This copyrighted material is made available to anyone wishing to use,
+# modify, copy, or redistribute it subject to the terms and conditions
+# of the GNU General Public License v.2.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software Foundation,
+# Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+unset PROGRAM FLUSH DEVICE DEVNAME MAJOR MINOR PATHDEVS PATHDEV HAVE_MULTIPATHD QUEUEING
+
+function usage
+{
+	echo "usage: $PROGRAM [-h] [--flush] <device>"
+	echo ""
+	echo "remove a multipath device and its scsi path devices"
+	echo ""
+	echo "options:"
+	echo "  -h, --help        show this help message and exit"
+	echo "  --flush           disable queuing on the multipath device and"
+	echo "                    flush the path devices before removing"
+}
+
+function parse_args
+{
+	while [ -n "$1" ]; do
+		case $1 in
+			--flush)
+				FLUSH=1
+				shift
+				;;
+			--help | -h)
+				usage
+				exit 1
+				;;
+			*)
+				if [ -n "$DEVICE" ]; then
+					usage
+					exit 1
+				fi
+				DEVICE=$1
+				shift
+				;;
+		esac
+	done
+}
+
+function validate_device
+{
+	if [ -z "$DEVICE" ]; then
+		usage
+		exit 1
+	fi
+	if [[ "$DEVICE" =~ ^[[:digit:]]+:[[:digit:]]+$ ]]; then
+		MAJOR=${DEVICE%%:*}
+		MINOR=${DEVICE##*:}
+		DEVNAME=`dmsetup ls --target multipath | grep "($MAJOR, $MINOR)$" | awk '{print $1}'`
+	else
+		DEVNAME=`dmsetup ls --target multipath | awk '{print $1}' | grep "^$DEVICE$"`
+	fi
+	if [ -z "$DEVNAME" ]; then
+		DEVNAME=`multipath -v 1 -l $DEVICE 2>/dev/null`
+		if [ -z "$DEVNAME" ]; then
+			echo "$DEVICE is not a multipath device"
+			exit 1
+		fi
+		# verify that this is not a native nvme multipath device
+		dmsetup ls --target multipath | awk '{print $1}' | grep -q "^$DEVNAME$"
+		if test $? -eq 1; then
+			echo "$DEVICE is not a device-mapper multipath device"
+			exit 1
+		fi
+	fi
+	if [ -z "$MINOR" ]; then
+		MINOR=`dmsetup info -c --noheadings -o minor $DEVNAME`
+	fi
+}
+
+function get_paths
+{
+	PATHDEVS=`ls /sys/block/dm-$MINOR/slaves`
+	for PATHDEV in $PATHDEVS; do
+		if [[ ! "$PATHDEV" =~ ^sd[a-z]+$ ]]; then
+			echo "$PATHDEV is not a scsi device. $PROGRAM only works with scsi devices"
+			exit 1
+		fi
+	done
+}
+
+function remove_devs
+{
+	pidof multipathd > /dev/null
+	HAVE_MULTIPATHD=$?
+	multipath -v2 -l "$DEVNAME" | grep features | grep -q queue_if_no_path
+	QUEUEING=$?
+	if [ -n "$FLUSH" ] && [ "$QUEUEING" -eq 0 ]; then
+		if test $HAVE_MULTIPATHD -eq 0; then
+			multipathd disablequeueing map "$DEVNAME" > /dev/null
+		else
+			dmsetup message "$DEVNAME" 0 fail_if_no_path
+		fi
+		sleep 1
+	fi
+	if test $HAVE_MULTIPATHD -eq 0; then
+		multipath -f "$DEVNAME"
+	else
+		multipathd -Df "$DEVNAME"
+	fi
+	if test $? -eq 1; then
+		echo "$DEVICE cannot be removed"
+		exit 1
+	fi
+	for PATHDEV in $PATHDEVS; do
+		if [ -n "$FLUSH" ]; then
+			blockdev --flushbufs /dev/"$PATHDEV"
+		fi
+		echo 1 > /sys/block/"$PATHDEV"/device/delete
+	done
+}
+
+function verify_removal
+{
+	multipath -v 1 -d $DEVNAME | grep -q "^$DEVNAME$"
+	if test $? -eq 0; then
+		echo "$DEVICE removed but path devices still exist"
+		exit 1
+	fi
+	multipath -v 1 -l $DEVNAME | grep -q "^$DEVNAME$"
+	if test $? -eq 0; then
+		echo "$DEVICE removal succeeded, but device still exists"
+		exit 1
+	fi
+}
+
+PROGRAM="$0"
+parse_args "$@"
+validate_device
+get_paths
+remove_devs
+verify_removal
