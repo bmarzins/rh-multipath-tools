@@ -25,6 +25,7 @@ install:
 	$(Q)$(INSTALL_PROGRAM) -d $(DESTDIR)$(bindir)
 	$(Q)$(INSTALL_PROGRAM) -m 755 $(EXEC) $(DESTDIR)$(bindir)/
 	$(Q)$(INSTALL_PROGRAM) -m 755 mpathconf $(DESTDIR)$(bindir)/
+	$(Q)$(INSTALL_PROGRAM) -m 755 mpathcleanup $(DESTDIR)$(bindir)/
 	$(Q)$(INSTALL_PROGRAM) -d $(DESTDIR)$(udevrulesdir)
 	$(Q)$(INSTALL_PROGRAM) -m 644 11-dm-mpath.rules $(DESTDIR)$(udevrulesdir)
 	$(Q)$(INSTALL_PROGRAM) -m 644 99-z-dm-mpath-late.rules $(DESTDIR)$(udevrulesdir)
@@ -49,6 +50,7 @@ endif
 uninstall:
 	$(Q)$(RM) $(DESTDIR)$(bindir)/$(EXEC)
 	$(Q)$(RM) $(DESTDIR)$(bindir)/mpathconf
+	$(Q)$(RM) $(DESTDIR)$(bindir)/mpathcleanup
 	$(Q)$(RM) $(DESTDIR)$(udevrulesdir)/11-dm-mpath.rules
 	$(Q)$(RM) $(DESTDIR)$(udevrulesdir)/99-z-dm-mpath-late.rules
 	$(Q)$(RM) $(DESTDIR)$(modulesloaddir)/multipath.conf
