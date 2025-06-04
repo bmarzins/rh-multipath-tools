@@ -144,7 +144,7 @@ mpath_prin_activepath (struct multipath *mpp, int rq_servact,
 			}
 		}
 	}
-	return ret;
+	return (ret == MPATH_PR_RETRYABLE_ERROR) ? MPATH_PR_OTHER : ret;
 }
 
 static vector curmp;
@@ -593,7 +593,7 @@ int mpath_prout_reg(struct multipath *mpp,int rq_servact, int rq_scope,
 	}
 
 	pthread_attr_destroy(&attr);
-	return (status);
+	return (status == MPATH_PR_RETRYABLE_ERROR) ? MPATH_PR_OTHER : status;
 }
 
 void * mpath_prout_pthread_fn(void *p)
@@ -613,6 +613,7 @@ int mpath_prout_common(struct multipath *mpp,int rq_servact, int rq_scope,
 	int i,j, ret;
 	struct pathgroup *pgp = NULL;
 	struct path *pp = NULL;
+	bool found = false;
 
 	vector_foreach_slot (mpp->pg, pgp, j){
 		vector_foreach_slot (pgp->paths, pp, i){
@@ -623,12 +624,16 @@ int mpath_prout_common(struct multipath *mpp,int rq_servact, int rq_scope,
 			}
 
 			condlog (3, "%s: sending pr out command to %s", mpp->wwid, pp->dev);
+			found = true;
 			ret = send_prout_activepath(pp->dev, rq_servact,
 						    rq_scope, rq_type,
 						    paramp, noisy);
-			return ret ;
+			if (ret != MPATH_PR_RETRYABLE_ERROR)
+				return ret;
 		}
 	}
+	if (found)
+		return MPATH_PR_OTHER;
 	condlog (0, "%s: no path available", mpp->wwid);
 	return MPATH_PR_DMMP_ERROR;
 }
@@ -864,7 +869,7 @@ out1:
 	free (pamp);
 out:
 	free (pr_buff);
-	return (status);
+	return (status == MPATH_PR_RETRYABLE_ERROR) ? MPATH_PR_OTHER : status;
 }
 
 void * mpath_alloc_prin_response(int prin_sa)
