@@ -37,10 +37,7 @@ void dumpHex(const char * , int len, int no_ascii);
 int prout_do_scsi_ioctl(char * , int rq_servact, int rq_scope,
 			unsigned int rq_type,
 			struct prout_param_descriptor *param, int noisy);
-int mpath_pr_event_handle(struct path *pp);
-void * mpath_pr_event_handler_fn (void * );
 int update_map_pr(struct multipath *mpp);
-void * mpath_pr_event_handler_fn (void * pathp );
 void handle_signals(bool);
 int __setup_multipath (struct vectors * vecs, struct multipath * mpp,
 		       int reset);
