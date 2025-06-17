@@ -123,7 +123,7 @@ mpath_prin_activepath (struct multipath *mpp, int rq_servact,
 		vector_foreach_slot (pgp->paths, pp, i){
 			if (!((pp->state == PATH_UP) ||
 			      (pp->state == PATH_GHOST))){
-				condlog(2, "%s: %s not available. Skip.",
+				condlog(3, "%s: %s not available. Skip.",
 					mpp->wwid, pp->dev);
 				condlog(3, "%s: status = %d.",
 					mpp->wwid, pp->state);
@@ -900,13 +900,19 @@ int update_map_pr(struct multipath *mpp)
 	struct prin_resp *resp;
 	unsigned int i;
 	int ret = MPATH_PR_OTHER, isFound;
+	bool was_set = (mpp->prflag == PRFLAG_SET);
+	int verbose;
+	struct config *conf;
+
+	conf = get_multipath_config();
+	verbose = conf->verbosity;
+	put_multipath_config(conf);
 
 	if (!get_be64(mpp->reservation_key))
 	{
 		/* Nothing to do. Assuming pr mgmt feature is disabled*/
 		mpp->prflag = PRFLAG_UNSET;
-		condlog(4, "%s: reservation_key not set in multipath.conf",
-			mpp->alias);
+		condlog(was_set ? 2 : 4, "%s: reservation_key not set in multipath.conf", mpp->alias);
 		return MPATH_PR_SUCCESS;
 	}
 
@@ -918,7 +924,7 @@ int update_map_pr(struct multipath *mpp)
 	}
 	if (count_active_paths(mpp) == 0)
 	{
-		condlog(0,"%s: No available paths to check pr status",
+		condlog(2, "%s: No available paths to check pr status",
 			mpp->alias);
 		goto out;
 	}
@@ -935,22 +941,24 @@ int update_map_pr(struct multipath *mpp)
 
 	if (resp->prin_descriptor.prin_readkeys.additional_length == 0 )
 	{
-		condlog(3,"%s: No key found. Device may not be registered. ", mpp->alias);
+		condlog(was_set ? 1 : 3, "%s: No key found. Device may not be registered. ", mpp->alias);
 		goto out;
 	}
 
-	condlog(2, "%s: Multipath  reservation_key: 0x%" PRIx64 " ", mpp->alias,
+	condlog(3, "%s: Multipath reservation_key: 0x%" PRIx64 " ", mpp->alias,
 		get_be64(mpp->reservation_key));
 
 	isFound =0;
 	for (i = 0; i < resp->prin_descriptor.prin_readkeys.additional_length/8; i++ )
 	{
-		condlog(2, "%s: PR IN READKEYS[%d]  reservation key:", mpp->alias, i);
-		dumpHex((char *)&resp->prin_descriptor.prin_readkeys.key_list[i*8], 8 , 1);
+		if (verbose >= 3) {
+			condlog(3, "%s: PR IN READKEYS[%d] reservation key:",
+				mpp->alias, i);
+			dumpHex((char *)&resp->prin_descriptor.prin_readkeys.key_list[i * 8], 8, 1);
+		}
 
-		if (!memcmp(&mpp->reservation_key, &resp->prin_descriptor.prin_readkeys.key_list[i*8], 8))
-		{
-			condlog(2, "%s: reservation key found in pr in readkeys response", mpp->alias);
+		if (!memcmp(&mpp->reservation_key, &resp->prin_descriptor.prin_readkeys.key_list[i * 8], 8)) {
+			condlog(3, "%s: reservation key found in pr in readkeys response", mpp->alias);
 			isFound =1;
 		}
 	}
@@ -958,7 +966,7 @@ int update_map_pr(struct multipath *mpp)
 	if (isFound)
 	{
 		mpp->prflag = PRFLAG_SET;
-		condlog(2, "%s: prflag flag set.", mpp->alias );
+		condlog(was_set ? 3 : 2, "%s: prflag flag set.", mpp->alias );
 	}
 
 out:
