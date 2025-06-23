@@ -41,8 +41,6 @@ int mpath_prout_common(struct multipath *mpp,int rq_servact, int rq_scope,
 	unsigned int rq_type,  struct prout_param_descriptor * paramp, int noisy);
 int mpath_prout_rel(struct multipath *mpp,int rq_servact, int rq_scope,
 	unsigned int rq_type,  struct prout_param_descriptor * paramp, int noisy);
-int send_prout_activepath(char * dev, int rq_servact, int rq_scope,
-	unsigned int rq_type,   struct prout_param_descriptor * paramp, int noisy);
 
 int update_prflag(char *mapname, int set);
 int update_prkey_flags(char *mapname, uint64_t prkey, uint8_t sa_flags);
