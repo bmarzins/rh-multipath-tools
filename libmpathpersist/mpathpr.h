@@ -37,8 +37,6 @@ void dumpHex(const char* , int len, int no_ascii);
 
 int mpath_prout_reg(struct multipath *mpp,int rq_servact, int rq_scope,
 	unsigned int rq_type,  struct prout_param_descriptor * paramp, int noisy);
-int mpath_prout_common(struct multipath *mpp,int rq_servact, int rq_scope,
-	unsigned int rq_type,  struct prout_param_descriptor * paramp, int noisy);
 int mpath_prout_rel(struct multipath *mpp,int rq_servact, int rq_scope,
 	unsigned int rq_type,  struct prout_param_descriptor * paramp, int noisy);
 
