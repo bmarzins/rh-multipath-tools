@@ -378,10 +378,10 @@ struct path {
 typedef int (pgpolicyfn) (struct multipath *, vector);
 
 
-enum prflag_value {
-	PRFLAG_UNKNOWN,
-	PRFLAG_UNSET,
-	PRFLAG_SET,
+enum pr_value {
+	PR_UNKNOWN,
+	PR_UNSET,
+	PR_SET,
 };
 
 struct multipath {

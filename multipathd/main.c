@@ -523,7 +523,7 @@ pr_register_active_paths(struct multipath *mpp)
 
 	vector_foreach_slot (mpp->pg, pgp, i) {
 		vector_foreach_slot (pgp->paths, pp, j) {
-			if (mpp->prflag == PRFLAG_UNSET)
+			if (mpp->prflag == PR_UNSET)
 				return;
 			if ((pp->state == PATH_UP) || (pp->state == PATH_GHOST))
 				mpath_pr_event_handle(pp);
@@ -1036,7 +1036,7 @@ ev_add_path (struct path * pp, struct vectors * vecs, int need_do_map)
 	int start_waiter = 0;
 	int ret;
 	int ro;
-	unsigned char prflag = PRFLAG_UNSET;
+	unsigned char prflag = PR_UNSET;
 
 	/*
 	 * need path UID to go any further
@@ -1162,7 +1162,7 @@ rescan:
 	sync_map_state(mpp);
 
 	if (retries >= 0) {
-		if ((mpp->prflag == PRFLAG_SET && prflag != PRFLAG_SET) ||
+		if ((mpp->prflag == PR_SET && prflag != PR_SET) ||
 		    start_waiter)
 			pr_register_active_paths(mpp);
 		condlog(2, "%s [%s]: path added to devmap %s",
@@ -2307,7 +2307,7 @@ check_path (struct vectors * vecs, struct path * pp, unsigned int ticks)
 		}
 
 		if (newstate == PATH_UP || newstate == PATH_GHOST) {
-			if (pp->mpp->prflag != PRFLAG_UNSET) {
+			if (pp->mpp->prflag != PR_UNSET) {
 				int prflag = pp->mpp->prflag;
 				/*
 				 * Check Persistent Reservation.
@@ -2315,8 +2315,8 @@ check_path (struct vectors * vecs, struct path * pp, unsigned int ticks)
 				condlog(2, "%s: checking persistent "
 					"reservation registration", pp->dev);
 				mpath_pr_event_handle(pp);
-				if (pp->mpp->prflag == PRFLAG_SET &&
-				    prflag != PRFLAG_SET)
+				if (pp->mpp->prflag == PR_SET &&
+				    prflag != PR_SET)
 					pr_register_active_paths(pp->mpp);
 			}
 		}
@@ -3378,14 +3378,14 @@ static void mpath_pr_event_handle(struct path *pp)
 	struct prout_param_descriptor *param;
 
 	if (pp->bus != SYSFS_BUS_SCSI) {
-		mpp->prflag = PRFLAG_UNSET;
+		mpp->prflag = PR_UNSET;
 		return;
 	}
 
 	if (update_map_pr(mpp, pp) != MPATH_PR_SUCCESS)
 		return;
 
-	if (mpp->prflag != PRFLAG_SET)
+	if (mpp->prflag != PR_SET)
 		return;
 
 	param = (struct prout_param_descriptor *)MALLOC(sizeof(struct prout_param_descriptor));

@@ -1404,14 +1404,15 @@ cli_shutdown (void * v, char ** reply, int * len, void * data)
 	return 0;
 }
 
+static const char * const pr_str[] = {
+	[PR_UNKNOWN] = "unknown\n",
+	[PR_UNSET] = "unset\n",
+	[PR_SET] = "set\n",
+};
+
 int
 cli_getprstatus (void * v, char ** reply, int * len, void * data)
 {
-	static const char * const prflag_str[] = {
-		[PRFLAG_UNKNOWN] = "unknown\n",
-		[PRFLAG_UNSET] = "unset\n",
-		[PRFLAG_SET] = "set\n",
-	};
 	struct multipath * mpp;
 	struct vectors * vecs = (struct vectors *)data;
 	char * param = get_keyparam(v, MAP);
@@ -1423,7 +1424,7 @@ cli_getprstatus (void * v, char ** reply, int * len, void * data)
 	if (!mpp)
 		return 1;
 
-	*len = asprintf(reply, "%s", prflag_str[mpp->prflag]);
+	*len = asprintf(reply, "%s", pr_str[mpp->prflag]);
 	if (*len < 0)
 		return 1;
 
@@ -1446,8 +1447,8 @@ cli_setprstatus(void * v, char ** reply, int * len, void * data)
 	if (!mpp)
 		return 1;
 
-	if (mpp->prflag != PRFLAG_SET) {
-		mpp->prflag = PRFLAG_SET;
+	if (mpp->prflag != PR_SET) {
+		mpp->prflag = PR_SET;
 		condlog(2, "%s: prflag set", param);
 	}
 
@@ -1469,8 +1470,8 @@ cli_unsetprstatus(void * v, char ** reply, int * len, void * data)
 	if (!mpp)
 		return 1;
 
-	if (mpp->prflag != PRFLAG_UNSET) {
-		mpp->prflag = PRFLAG_UNSET;
+	if (mpp->prflag != PR_UNSET) {
+		mpp->prflag = PR_UNSET;
 		condlog(2, "%s: prflag unset", param);
 	}
 
