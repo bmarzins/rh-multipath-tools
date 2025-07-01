@@ -288,6 +288,23 @@ int __mpath_persistent_reserve_in (int fd, int rq_servact,
 					      resp, noisy);
 }
 
+/*
+ * for MPATH_PROUT_REG_IGN_SA, we use the ignored paramp->key to store the
+ * currently registered key.
+ */
+static void set_ignored_key(struct multipath *mpp, uint8_t *key)
+{
+	memset(key, 0, 8);
+	if (!get_be64(mpp->reservation_key))
+		return;
+	if (get_prflag(mpp->alias) == PRFLAG_UNSET)
+		return;
+	update_map_pr(mpp, NULL);
+	if (mpp->prflag != PRFLAG_SET)
+		return;
+	memcpy(key, &mpp->reservation_key, 8);
+}
+
 static int do_mpath_persistent_reserve_out(vector curmp, vector pathvec, int fd,
 	int rq_servact, int rq_scope, unsigned int rq_type,
 	struct prout_param_descriptor *paramp, int noisy)
@@ -307,6 +324,9 @@ static int do_mpath_persistent_reserve_out(vector curmp, vector pathvec, int fd,
 	select_all_tg_pt(conf, mpp);
 	select_skip_kpartx(conf, mpp);
 	put_multipath_config(conf);
+
+	if (rq_servact == MPATH_PROUT_REG_IGN_SA)
+		set_ignored_key(mpp, paramp->key);
 
 	memcpy(&prkey, paramp->sa_key, 8);
 	if (mpp->prkey_source == PRKEY_SOURCE_FILE && prkey &&

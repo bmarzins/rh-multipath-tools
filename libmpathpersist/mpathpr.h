@@ -42,6 +42,7 @@ int mpath_prout_rel(struct multipath *mpp,int rq_servact, int rq_scope,
 
 int update_prflag(char *mapname, int set);
 int update_prkey_flags(char *mapname, uint64_t prkey, uint8_t sa_flags);
+int get_prflag(char *mapname);
 #define update_prkey(mapname, prkey) update_prkey_flags(mapname, prkey, 0)
 void * mpath_alloc_prin_response(int prin_sa);
 int update_map_pr(struct multipath *mpp, struct path *pp);
