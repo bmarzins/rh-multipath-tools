@@ -288,19 +288,39 @@ int __mpath_persistent_reserve_in (int fd, int rq_servact,
 					      resp, noisy);
 }
 
+static int reservation_key_matches(struct multipath *mpp, uint8_t *key,
+				   int noisy)
+{
+	struct prin_resp resp = {0};
+	int status;
+
+	status = mpath_prin_activepath (mpp, MPATH_PRIN_RRES_SA, &resp, noisy);
+	if (status != MPATH_PR_SUCCESS) {
+		condlog(0, "%s: pr in read reservation command failed.",
+			mpp->wwid);
+		return YNU_UNDEF;
+	}
+	if (!resp.prin_descriptor.prin_readresv.additional_length)
+		return YNU_NO;
+	if (memcmp(key, resp.prin_descriptor.prin_readresv.key, 8) == 0)
+		return YNU_YES;
+	return YNU_NO;
+}
+
 /*
  * for MPATH_PROUT_REG_IGN_SA, we use the ignored paramp->key to store the
- * currently registered key.
+ * currently registered key for use in preempt_missing_path(), but only if
+ * the key is holding the reservation.
  */
 static void set_ignored_key(struct multipath *mpp, uint8_t *key)
 {
 	memset(key, 0, 8);
 	if (!get_be64(mpp->reservation_key))
 		return;
-	if (get_prflag(mpp->alias) == PR_UNSET)
+	if (get_prhold(mpp->alias) == PR_UNSET)
 		return;
-	update_map_pr(mpp, NULL);
-	if (mpp->prflag != PR_SET)
+	if (reservation_key_matches(mpp, (uint8_t *)&mpp->reservation_key,
+				    0) == YNU_NO)
 		return;
 	memcpy(key, &mpp->reservation_key, 8);
 }
@@ -314,6 +334,7 @@ static int do_mpath_persistent_reserve_out(vector curmp, vector pathvec, int fd,
 	int ret;
 	uint64_t prkey;
 	struct config *conf;
+	bool preempting_reservation = false;
 
 	ret = mpath_get_map(curmp, pathvec, fd, &alias, &mpp);
 	if (ret != MPATH_PR_SUCCESS)
@@ -358,9 +379,12 @@ static int do_mpath_persistent_reserve_out(vector curmp, vector pathvec, int fd,
 	case MPATH_PROUT_REG_IGN_SA:
 		ret= mpath_prout_reg(mpp, rq_servact, rq_scope, rq_type, paramp, noisy);
 		break;
-	case MPATH_PROUT_RES_SA :
 	case MPATH_PROUT_PREE_SA :
 	case MPATH_PROUT_PREE_AB_SA :
+		if (reservation_key_matches(mpp, paramp->sa_key, noisy) == YNU_YES)
+			preempting_reservation = true;
+		/* fallthrough */
+	case MPATH_PROUT_RES_SA :
 	case MPATH_PROUT_CLEAR_SA:
 		ret = mpath_prout_common(mpp, rq_servact, rq_scope, rq_type,
 					 paramp, noisy, NULL);
@@ -389,6 +413,15 @@ static int do_mpath_persistent_reserve_out(vector curmp, vector pathvec, int fd,
 	case MPATH_PROUT_CLEAR_SA:
 		update_prflag(alias, 0);
 		update_prkey(alias, 0);
+		break;
+	case MPATH_PROUT_RES_SA:
+	case MPATH_PROUT_REL_SA:
+		update_prhold(alias, (rq_servact == MPATH_PROUT_RES_SA));
+		break;
+	case MPATH_PROUT_PREE_SA:
+	case MPATH_PROUT_PREE_AB_SA:
+		if (preempting_reservation)
+			update_prhold(alias, 1);
 	}
 out1:
 	FREE(alias);
@@ -480,6 +513,10 @@ get_mpvec (vector curmp, vector pathvec, char * refwwid)
  * holding the reservation on a path that couldn't get its key updated,
  * either because it is down or no longer part of the multipath device,
  * you need to preempt the reservation to a usable path with the new key
+ *
+ * Also, it's possible that the reservation was preempted, and the device
+ * is being re-registered. If it appears that is the case, clear
+ * mpp->prhold in multipathd.
  */
 void preempt_missing_path(struct multipath *mpp, uint8_t *key, uint8_t *sa_key,
 			  int noisy)
@@ -492,12 +529,19 @@ void preempt_missing_path(struct multipath *mpp, uint8_t *key, uint8_t *sa_key,
 	int status;
 
 	/*
-	 * If you previously didn't have a key registered or you didn't
-	 * switch to a different key, there's no need to preempt. Also, you
-	 * can't preempt if you no longer have a registered key
+	 * If you previously didn't have a key registered, you can't
+	 * be holding the reservation. Also, you can't preempt if you
+	 * no longer have a registered key
 	 */
-	if (memcmp(key, zero, 8) == 0 || memcmp(sa_key, zero, 8) == 0 ||
-	    memcmp(key, sa_key, 8) == 0)
+	if (memcmp(key, zero, 8) == 0 || memcmp(sa_key, zero, 8) == 0) {
+		update_prhold(mpp->alias, false);
+		return;
+	}
+	/*
+	 * If you didn't switch to a different key, there is no need to
+	 * preempt.
+	 */
+	if (memcmp(key, sa_key, 8) == 0)
 		return;
 
 	status = mpath_prin_activepath (mpp, MPATH_PRIN_RRES_SA, &resp, noisy);
@@ -506,13 +550,29 @@ void preempt_missing_path(struct multipath *mpp, uint8_t *key, uint8_t *sa_key,
 		return;
 	}
 	/* If there is no reservation, there's nothing to preempt */
-	if (!resp.prin_descriptor.prin_readresv.additional_length)
+	if (!resp.prin_descriptor.prin_readresv.additional_length) {
+		update_prhold(mpp->alias, false);
 		return;
+	}
 	/*
 	 * If there reservation is not held by the old key, you don't
 	 * want to preempt it
 	 */
-	if (memcmp(key, resp.prin_descriptor.prin_readresv.key, 8) != 0)
+	if (memcmp(key, resp.prin_descriptor.prin_readresv.key, 8) != 0) {
+		/*
+		 * If reseravation key doesn't match either the old or
+		 * the new key, then clear prhold.
+		 */
+		if (memcmp(sa_key, resp.prin_descriptor.prin_readresv.key, 8) != 0)
+			update_prhold(mpp->alias, false);
+		return;
+	}
+
+	/*
+	 * If multipathd doesn't think it is holding the reservation, don't
+	 * preempt it
+	 */
+	if (get_prhold(mpp->alias) != PR_SET)
 		return;
 	/* Assume this key is being held by an inaccessable path on this
 	 * node. libmpathpersist has never worked if multiple nodes share

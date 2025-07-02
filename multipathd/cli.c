@@ -222,7 +222,9 @@ load_keys (void)
 	r += add_key(keys, "local", LOCAL, 0);
 	r += add_key(keys, "setmarginal", SETMARGINAL, 0);
 	r += add_key(keys, "unsetmarginal", UNSETMARGINAL, 0);
-
+	r += add_key(keys, "getprhold", GETPRHOLD, 0);
+	r += add_key(keys, "setprhold", SETPRHOLD, 0);
+	r += add_key(keys, "unsetprhold", UNSETPRHOLD, 0);
 
 	if (r) {
 		free_keys(keys);
@@ -600,6 +602,9 @@ cli_init (void) {
 	add_handler(GETPRKEY+MAP, NULL);
 	add_handler(SETPRKEY+MAP+KEY, NULL);
 	add_handler(UNSETPRKEY+MAP, NULL);
+	add_handler(GETPRHOLD+MAP, NULL);
+	add_handler(SETPRHOLD+MAP, NULL);
+	add_handler(UNSETPRHOLD+MAP, NULL);
 	add_handler(FORCEQ+DAEMON, NULL);
 	add_handler(RESTOREQ+DAEMON, NULL);
 	add_handler(SETMARGINAL+PATH, NULL);
