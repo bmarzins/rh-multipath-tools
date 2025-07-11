@@ -1797,6 +1797,7 @@ path_offline (struct path * pp)
 			return PATH_UP;
 	}
 
+	condlog(0, "%s: path state = %s", pp->dev, buff);
 	return PATH_DOWN;
 }
 

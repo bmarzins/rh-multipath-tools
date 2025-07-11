@@ -954,7 +954,8 @@ uev_add_path (struct uevent *uev, struct vectors * vecs, int need_do_map)
 	int ret = 0, i;
 	struct config *conf;
 
-	condlog(3, "%s: add path (uevent)", uev->kernel);
+	condlog(0, "%s: add path (uevent%s)", uev->kernel,
+		(need_do_map) ? "" : ": no reload");
 	if (strstr(uev->kernel, "..") != NULL) {
 		/*
 		 * Don't allow relative device names in the pathvec
@@ -1248,7 +1249,8 @@ uev_remove_path (struct uevent *uev, struct vectors * vecs, int need_do_map)
 {
 	struct path *pp;
 
-	condlog(3, "%s: remove path (uevent)", uev->kernel);
+	condlog(0, "%s: remove path (uevent%s)", uev->kernel,
+		(need_do_map) ? "" : ": no reload");
 	delete_foreign(uev->udev);
 
 	pthread_cleanup_push(cleanup_lock, &vecs->lock);
@@ -1343,8 +1345,10 @@ ev_remove_path (struct path *pp, struct vectors * vecs, int need_do_map)
 			/* setup_multipath will free the path
 			 * regardless of whether it succeeds or
 			 * fails */
-			if (setup_multipath(vecs, mpp))
-				return REMOVE_PATH_MAP_ERROR;
+			if (setup_multipath(vecs, mpp)) {
+				retval = REMOVE_PATH_MAP_ERROR;
+				goto out;
+			}
 			sync_map_state(mpp);
 
 			condlog(2, "%s: path removed from map %s",
@@ -1357,6 +1361,7 @@ ev_remove_path (struct path *pp, struct vectors * vecs, int need_do_map)
 		free_path(pp);
 	}
 out:
+	condlog(0, "remove path returned %d", retval);
 	return retval;
 
 fail:
@@ -2317,7 +2322,7 @@ check_path (struct vectors * vecs, struct path * pp, unsigned int ticks)
 		pthread_cleanup_pop(1);
 	} else {
 		checker_clear_message(&pp->checker);
-		condlog(3, "%s: state %s, checker not called",
+		condlog(0, "%s: state %s, checker not called",
 			pp->dev, checker_state_name(newstate));
 	}
 	/*
@@ -2631,6 +2636,8 @@ checkerloop (void *ap)
 				(long)diff_time.tv_sec, diff_time.tv_nsec / 1000);
 			last_time = start_time;
 			ticks = diff_time.tv_sec;
+			if (ticks > 20)
+				condlog(0, "DEBUG: %u seconds since last checker loop", ticks);
 		} else {
 			ticks = 1;
 			condlog(4, "tick (%d ticks)", ticks);

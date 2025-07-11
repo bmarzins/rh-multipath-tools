@@ -330,7 +330,7 @@ uevent_filter(struct uevent *later, struct list_head *tmpq)
 		 * by the later uevent
 		 */
 		if (uevent_can_filter(earlier, later)) {
-			condlog(3, "uevent: %s-%s has filtered by uevent: %s-%s",
+			condlog(0, "uevent: %s-%s has filtered by uevent: %s-%s",
 				earlier->kernel, earlier->action,
 				later->kernel, later->action);
 
