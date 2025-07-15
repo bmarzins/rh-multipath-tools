@@ -41,4 +41,6 @@ int update_path_groups(struct multipath *mpp, struct vectors *vecs,
 
 void handle_path_wwid_change(struct path *pp, struct vectors *vecs);
 bool check_path_wwid_change(struct path *pp);
+void set_pr(struct multipath *mpp);
+void unset_pr(struct multipath *mpp);
 #endif /* MAIN_H */
