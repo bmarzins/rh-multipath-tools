@@ -31,12 +31,6 @@ int ev_remove_map (char *, char *, int, struct vectors *);
 int flush_map(struct multipath *, struct vectors *, int);
 int set_config_state(enum daemon_status);
 void * mpath_alloc_prin_response(int prin_sa);
-int prin_do_scsi_ioctl(char *, int rq_servact, struct prin_resp * resp,
-		       int noisy);
-void dumpHex(const char * , int len, int no_ascii);
-int prout_do_scsi_ioctl(char * , int rq_servact, int rq_scope,
-			unsigned int rq_type,
-			struct prout_param_descriptor *param, int noisy);
 void handle_signals(bool);
 int __setup_multipath (struct vectors * vecs, struct multipath * mpp,
 		       int reset);
