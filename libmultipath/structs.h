@@ -462,6 +462,7 @@ struct multipath {
 	struct gen_multipath generic_mp;
 	bool fpin_must_reload;
 	int prhold;
+	bool ever_registered_pr;
 };
 
 static inline int marginal_path_check_enabled(const struct multipath *mpp)

@@ -2310,7 +2310,8 @@ check_path (struct vectors * vecs, struct path * pp, unsigned int ticks)
 		}
 
 		if (newstate == PATH_UP || newstate == PATH_GHOST) {
-			if (pp->mpp->prflag != PR_UNSET) {
+			if (pp->mpp->prflag != PR_UNSET ||
+			    pp->mpp->ever_registered_pr) {
 				int prflag = pp->mpp->prflag;
 				/*
 				 * Check Persistent Reservation.
@@ -3398,6 +3399,7 @@ static void check_prhold(struct multipath *mpp, struct path *pp)
 
 void set_pr(struct multipath *mpp)
 {
+	mpp->ever_registered_pr = true;
 	mpp->prflag = PR_SET;
 }
 
@@ -3408,11 +3410,16 @@ void unset_pr(struct multipath *mpp)
 	mpp->sa_flags = 0;
 }
 
+/*
+ * Returns MPATH_PR_SUCCESS unless if fails to read the PR keys. If
+ * MPATH_PR_SUCCESS is returned, mpp->prflag will be either PR_SET or
+ * PR_UNSET.
+ */
 static int update_map_pr(struct multipath *mpp, struct path *pp)
 {
 	struct prin_resp resp;
 	unsigned int i;
-	int ret = MPATH_PR_OTHER, isFound;
+	int ret, isFound;
 	bool was_set = (mpp->prflag == PR_SET);
 	int verbose;
 	struct config *conf;
@@ -3423,13 +3430,13 @@ static int update_map_pr(struct multipath *mpp, struct path *pp)
 
 	/* If pr is explicitly unset, it must be manually set */
 	if (mpp->prflag == PR_UNSET)
-		return MPATH_PR_SKIP;
+		return MPATH_PR_SUCCESS;
 
 	if (!get_be64(mpp->reservation_key)) {
 		/* Nothing to do. Assuming pr mgmt feature is disabled*/
 		unset_pr(mpp);
 		condlog(was_set ? 2 : 4, "%s: reservation_key not set in multipath.conf", mpp->alias);
-		return MPATH_PR_SKIP;
+		return MPATH_PR_SUCCESS;
 	}
 
 	memset(&resp, 0, sizeof(resp));
@@ -3477,6 +3484,7 @@ static void mpath_pr_event_handle(struct path *pp)
 	struct multipath *mpp = pp->mpp;
 	int ret;
 	struct prout_param_descriptor param;
+	bool clear_reg = false;
 
 	if (pp->bus != SYSFS_BUS_SCSI) {
 		unset_pr(mpp);
@@ -3488,20 +3496,36 @@ static void mpath_pr_event_handle(struct path *pp)
 
 	check_prhold(mpp, pp);
 
-	if (mpp->prflag != PR_SET)
-		return;
+	if (mpp->prflag != PR_SET) {
+		if (!mpp->ever_registered_pr)
+			return;
+		/*
+		 * This path may have been unusable and either the
+		 * registration was cleared or the registered
+		 * key was switched and then that new key was preempted.
+		 * In either case, this path should not have a registration
+		 * but it might still have one, just with a different
+		 * key than mpp->reservation_key is currently set to.
+		 * clear it to be sure.
+		 */
+		clear_reg = true;
+	}
 
 	memset(&param, 0, sizeof(param));
 
-	param.sa_flags = mpp->sa_flags;
-	memcpy(param.sa_key, &mpp->reservation_key, 8);
-	param.num_transportid = 0;
+	if (!clear_reg) {
+		param.sa_flags = mpp->sa_flags;
+		memcpy(param.sa_key, &mpp->reservation_key, 8);
+		param.num_transportid = 0;
+	}
 
-	condlog(3, "device %s:%s", pp->dev, pp->mpp->wwid);
+	condlog(3, "%s registration for device %s:%s",
+		clear_reg ? "Clearing" : "Setting", pp->dev, pp->mpp->wwid);
 
 	ret = prout_do_scsi_ioctl(pp->dev, MPATH_PROUT_REG_IGN_SA, 0, 0, &param, 0);
 	if (ret != MPATH_PR_SUCCESS )
 	{
-		condlog(0,"%s: Reservation registration failed. Error: %d", pp->dev, ret);
+		condlog(0, "%s: %s reservation registration failed. Error: %d",
+			clear_reg ? "Clearing" : "Setting", pp->dev, ret);
 	}
 }
