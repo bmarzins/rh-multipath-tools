@@ -350,7 +350,7 @@ static int do_mpath_persistent_reserve_out(vector curmp, vector pathvec, int fd,
 		set_ignored_key(mpp, paramp->key);
 
 	unregistering = (memcmp(&zerokey, paramp->sa_key, 8) == 0);
-	if (mpp->prkey_source == PRKEY_SOURCE_FILE && !unregistering &&
+	if (mpp->prkey_source == PRKEY_SOURCE_FILE &&
 	    (rq_servact == MPATH_PROUT_REG_IGN_SA ||
 	     (rq_servact == MPATH_PROUT_REG_SA &&
 	      (!get_be64(mpp->reservation_key) ||
@@ -431,10 +431,9 @@ static int do_mpath_persistent_reserve_out(vector curmp, vector pathvec, int fd,
 	{
 	case MPATH_PROUT_REG_SA:
 	case MPATH_PROUT_REG_IGN_SA:
-		if (unregistering) {
+		if (unregistering)
 			update_prflag(alias, 0);
-			update_prkey(alias, 0);
-		} else
+		else
 			update_prflag(alias, 1);
 		break;
 	case MPATH_PROUT_CLEAR_SA:
