@@ -333,8 +333,10 @@ static int do_mpath_persistent_reserve_out(vector curmp, vector pathvec, int fd,
 	char *alias;
 	int ret;
 	uint64_t zerokey = 0;
+	struct be64 oldkey = {0};
 	struct config *conf;
 	bool unregistering, preempting_reservation = false;
+	bool updated_prkey = false;
 
 	ret = mpath_get_map(curmp, pathvec, fd, &alias, &mpp);
 	if (ret != MPATH_PR_SUCCESS)
@@ -356,6 +358,8 @@ static int do_mpath_persistent_reserve_out(vector curmp, vector pathvec, int fd,
 	      (!get_be64(mpp->reservation_key) ||
 	       memcmp(paramp->key, &zerokey, 8) == 0 ||
 	       memcmp(paramp->key, &mpp->reservation_key, 8) == 0)))) {
+		updated_prkey = true;
+		memcpy(&oldkey, &mpp->reservation_key, 8);
 		memcpy(&mpp->reservation_key, paramp->sa_key, 8);
 		if (update_prkey_flags(alias, get_be64(mpp->reservation_key),
 				       paramp->sa_flags)) {
@@ -424,8 +428,12 @@ static int do_mpath_persistent_reserve_out(vector curmp, vector pathvec, int fd,
 		goto out1;
 	}
 
-	if (ret != MPATH_PR_SUCCESS)
+	if (ret != MPATH_PR_SUCCESS) {
+		if (updated_prkey)
+			update_prkey_flags(alias, get_be64(oldkey),
+					   mpp->sa_flags);
 		goto out1;
+	}
 
 	switch(rq_servact)
 	{
