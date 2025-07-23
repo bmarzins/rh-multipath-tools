@@ -438,7 +438,8 @@ static int do_mpath_persistent_reserve_out(vector curmp, vector pathvec, int fd,
 		break;
 	case MPATH_PROUT_CLEAR_SA:
 		update_prflag(alias, 0);
-		update_prkey(alias, 0);
+		if (mpp->prkey_source == PRKEY_SOURCE_FILE)
+			update_prkey(alias, 0);
 		break;
 	case MPATH_PROUT_RES_SA:
 	case MPATH_PROUT_REL_SA:
