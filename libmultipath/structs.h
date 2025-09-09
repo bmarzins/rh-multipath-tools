@@ -463,6 +463,7 @@ struct multipath {
 	bool fpin_must_reload;
 	int prhold;
 	bool ever_registered_pr;
+	struct be64 old_pr_key;
 };
 
 static inline int marginal_path_check_enabled(const struct multipath *mpp)
