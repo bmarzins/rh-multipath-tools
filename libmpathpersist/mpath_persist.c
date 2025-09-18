@@ -328,17 +328,17 @@ static int reservation_key_matches(struct multipath *mpp, uint8_t *key,
  * currently registered key for use in preempt_missing_path(), but only if
  * the key is holding the reservation.
  */
-static void set_ignored_key(struct multipath *mpp, uint8_t *key)
+static void set_ignored_key(struct multipath *mpp, uint8_t *curr_key,
+			    uint8_t *key)
 {
 	memset(key, 0, 8);
-	if (!get_be64(mpp->reservation_key))
+	if (memcmp(curr_key, key, 8) == 0)
 		return;
 	if (get_prhold(mpp->alias) == PR_UNSET)
 		return;
-	if (reservation_key_matches(mpp, (uint8_t *)&mpp->reservation_key,
-				    0) == YNU_NO)
+	if (reservation_key_matches(mpp, curr_key, 0) == YNU_NO)
 		return;
-	memcpy(key, &mpp->reservation_key, 8);
+	memcpy(key, curr_key, 8);
 }
 
 static int preempt_self(struct multipath *mpp, int rq_servact, int rq_scope,
@@ -378,6 +378,7 @@ static int do_mpath_persistent_reserve_out(vector curmp, vector pathvec, int fd,
 	select_reservation_key(conf, mpp);
 	put_multipath_config(conf);
 
+	memcpy(&oldkey, &mpp->reservation_key, 8);
 	unregistering = (memcmp(&zerokey, paramp->sa_key, 8) == 0);
 	if (mpp->prkey_source == PRKEY_SOURCE_FILE &&
 	    (rq_servact == MPATH_PROUT_REG_IGN_SA ||
@@ -386,7 +387,6 @@ static int do_mpath_persistent_reserve_out(vector curmp, vector pathvec, int fd,
 	       memcmp(paramp->key, &zerokey, 8) == 0 ||
 	       memcmp(paramp->key, &mpp->reservation_key, 8) == 0)))) {
 		updated_prkey = true;
-		memcpy(&oldkey, &mpp->reservation_key, 8);
 		memcpy(&mpp->reservation_key, paramp->sa_key, 8);
 		if (update_prkey_flags(alias, get_be64(mpp->reservation_key),
 				       paramp->sa_flags)) {
@@ -445,7 +445,7 @@ static int do_mpath_persistent_reserve_out(vector curmp, vector pathvec, int fd,
 	put_multipath_config(conf);
 
 	if (rq_servact == MPATH_PROUT_REG_IGN_SA)
-		set_ignored_key(mpp, paramp->key);
+		set_ignored_key(mpp, (uint8_t *)&oldkey, paramp->key);
 
 	switch(rq_servact)
 	{
