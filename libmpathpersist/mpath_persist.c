@@ -118,7 +118,7 @@ updatepaths (struct multipath * mpp)
 static int mpath_prout_common(struct multipath *mpp,int rq_servact,
 			      int rq_scope, unsigned int rq_type,
 			      struct prout_param_descriptor* paramp, int noisy,
-			      struct path **pptr);
+			      struct path **pptr, bool *failed_paths);
 
 int
 mpath_prin_activepath (struct multipath *mpp, int rq_servact,
@@ -305,12 +305,12 @@ int __mpath_persistent_reserve_in (int fd, int rq_servact,
 }
 
 static int reservation_key_matches(struct multipath *mpp, uint8_t *key,
-				   int noisy)
+				   unsigned int *type)
 {
 	struct prin_resp resp = {0};
 	int status;
 
-	status = mpath_prin_activepath (mpp, MPATH_PRIN_RRES_SA, &resp, noisy);
+	status = mpath_prin_activepath(mpp, MPATH_PRIN_RRES_SA, &resp, 0);
 	if (status != MPATH_PR_SUCCESS) {
 		condlog(0, "%s: pr in read reservation command failed.",
 			mpp->wwid);
@@ -318,8 +318,12 @@ static int reservation_key_matches(struct multipath *mpp, uint8_t *key,
 	}
 	if (!resp.prin_descriptor.prin_readresv.additional_length)
 		return YNU_NO;
-	if (memcmp(key, resp.prin_descriptor.prin_readresv.key, 8) == 0)
+	if (memcmp(key, resp.prin_descriptor.prin_readresv.key, 8) == 0) {
+		if (type)
+			*type = resp.prin_descriptor.prin_readresv.scope_type &
+				MPATH_PR_TYPE_MASK;
 		return YNU_YES;
+	}
 	return YNU_NO;
 }
 
@@ -336,9 +340,18 @@ static void set_ignored_key(struct multipath *mpp, uint8_t *curr_key,
 		return;
 	if (get_prhold(mpp->alias) == PR_UNSET)
 		return;
-	if (reservation_key_matches(mpp, curr_key, 0) == YNU_NO)
+	if (reservation_key_matches(mpp, curr_key, NULL) == YNU_NO)
 		return;
 	memcpy(key, curr_key, 8);
+}
+
+static bool check_holding_reservation(struct multipath *mpp, unsigned int *type)
+{
+	if (get_be64(mpp->reservation_key) &&
+	    get_prhold(mpp->alias) == PR_SET &&
+	    reservation_key_matches(mpp, (uint8_t *)&mpp->reservation_key, type) == YNU_YES)
+		return true;
+	return false;
 }
 
 static int preempt_self(struct multipath *mpp, int rq_servact, int rq_scope,
@@ -368,6 +381,7 @@ static int do_mpath_persistent_reserve_out(vector curmp, vector pathvec, int fd,
 	struct config *conf;
 	bool unregistering, preempting_reservation = false;
 	bool updated_prkey = false;
+	bool failed_paths = false;
 
 	ret = mpath_get_map(curmp, fd, &alias, &mpp);
 	if (ret != MPATH_PR_SUCCESS)
@@ -455,7 +469,7 @@ static int do_mpath_persistent_reserve_out(vector curmp, vector pathvec, int fd,
 		break;
 	case MPATH_PROUT_PREE_SA :
 	case MPATH_PROUT_PREE_AB_SA :
-		if (reservation_key_matches(mpp, paramp->sa_key, noisy) == YNU_YES) {
+		if (reservation_key_matches(mpp, paramp->sa_key, NULL) == YNU_YES) {
 			preempting_reservation = true;
 			if (memcmp(paramp->sa_key, &zerokey, 8) == 0) {
 				/* all registrants case */
@@ -472,10 +486,18 @@ static int do_mpath_persistent_reserve_out(vector curmp, vector pathvec, int fd,
 		}
 		/* fallthrough */
 	case MPATH_PROUT_RES_SA :
-	case MPATH_PROUT_CLEAR_SA:
+	case MPATH_PROUT_CLEAR_SA: {
+		unsigned int res_type;
 		ret = mpath_prout_common(mpp, rq_servact, rq_scope, rq_type,
-					 paramp, noisy, NULL);
+					 paramp, noisy, NULL, &failed_paths);
+		if (rq_servact == MPATH_PROUT_RES_SA &&
+		    ret != MPATH_PR_SUCCESS && failed_paths &&
+		    check_holding_reservation(mpp, &res_type) &&
+		    res_type == rq_type)
+			/* The reserve failed, but multipathd says we hold it */
+			ret = MPATH_PR_SUCCESS;
 		break;
+	}
 	case MPATH_PROUT_REL_SA:
 		ret = mpath_prout_rel(mpp, rq_servact, rq_scope, rq_type, paramp, noisy);
 		break;
@@ -633,7 +655,7 @@ void preempt_missing_path(struct multipath *mpp, uint8_t *key, uint8_t *sa_key,
 	memcpy(paramp.key, sa_key, 8);
 	memcpy(paramp.sa_key, key, 8);
 	status = mpath_prout_common(mpp, MPATH_PROUT_PREE_SA, rq_scope, rq_type,
-				    &paramp, noisy, NULL);
+				    &paramp, noisy, NULL, NULL);
 	if (status != MPATH_PR_SUCCESS)
 		condlog(0, "%s: register: pr preempt command failed.",
 			mpp->wwid);
@@ -872,7 +894,7 @@ void * mpath_prout_pthread_fn(void *p)
 static int mpath_prout_common(struct multipath *mpp,int rq_servact, int rq_scope,
 			      unsigned int rq_type,
 			      struct prout_param_descriptor* paramp, int noisy,
-			      struct path **pptr)
+			      struct path **pptr, bool *failed_paths)
 {
 	int i,j, ret;
 	struct pathgroup *pgp = NULL;
@@ -885,6 +907,8 @@ static int mpath_prout_common(struct multipath *mpp,int rq_servact, int rq_scope
 			if (!((pp->state == PATH_UP) || (pp->state == PATH_GHOST))){
 				condlog (1, "%s: %s path not up. Skip",
 					 mpp->wwid, pp->dev);
+				if (failed_paths)
+					*failed_paths = true;
 				continue;
 			}
 
@@ -918,6 +942,8 @@ static int mpath_prout_common(struct multipath *mpp,int rq_servact, int rq_scope
 			}
 			if (ret != MPATH_PR_RETRYABLE_ERROR)
 				return ret;
+			if (failed_paths)
+				*failed_paths = true;
 		}
 	}
 	if (found)
@@ -952,7 +978,7 @@ static int do_preempt_self(struct multipath *mpp, struct be64 sa_key,
 	memcpy(paramp.key, &mpp->reservation_key, 8);
 	memcpy(paramp.sa_key, &sa_key, 8);
 	status = mpath_prout_common(mpp, rq_servact, rq_scope, rq_type,
-				    &paramp, noisy, &pp);
+				    &paramp, noisy, &pp, NULL);
 	if (status != MPATH_PR_SUCCESS) {
 		condlog(0, "%s: self preempt command failed.", mpp->wwid);
 		goto fail_resume;
