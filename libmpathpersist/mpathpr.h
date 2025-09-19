@@ -37,7 +37,8 @@ void dumpHex(const char* , int len, int no_ascii);
 int mpath_prout_reg(struct multipath *mpp,int rq_servact, int rq_scope,
 	unsigned int rq_type,  struct prout_param_descriptor * paramp, int noisy);
 int mpath_prout_rel(struct multipath *mpp,int rq_servact, int rq_scope,
-	unsigned int rq_type,  struct prout_param_descriptor * paramp, int noisy);
+	unsigned int rq_type, struct prout_param_descriptor *paramp, int noisy,
+	bool unregister);
 
 int update_prflag(char *mapname, int set);
 int update_prkey_flags(char *mapname, uint64_t prkey, uint8_t sa_flags);
