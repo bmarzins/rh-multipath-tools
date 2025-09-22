@@ -1016,7 +1016,6 @@ int mpath_prout_rel(struct multipath *mpp,int rq_servact, int rq_scope,
 	unsigned int rq_type, struct prout_param_descriptor * paramp, int noisy)
 {
 	int i, j;
-	int num = 0;
 	struct pathgroup *pgp = NULL;
 	struct path *pp = NULL;
 	int active_pathcount = 0;
@@ -1024,9 +1023,8 @@ int mpath_prout_rel(struct multipath *mpp,int rq_servact, int rq_scope,
 	int rc;
 	int count = 0;
 	int status = MPATH_PR_SUCCESS;
-	struct prin_resp resp = {0};
 	bool all_threads_failed;
-	unsigned int scope_type;
+	unsigned int res_type;
 
 	if (!mpp)
 		return MPATH_PR_DMMP_ERROR;
@@ -1105,27 +1103,13 @@ int mpath_prout_rel(struct multipath *mpp,int rq_servact, int rq_scope,
 		return status;
 	}
 
-	status = mpath_prin_activepath (mpp, MPATH_PRIN_RRES_SA, &resp, noisy);
-	if (status != MPATH_PR_SUCCESS){
-		condlog (0, "%s: pr in read reservation command failed.", mpp->wwid);
-		return MPATH_PR_OTHER;
-	}
-
-	num = resp.prin_descriptor.prin_readresv.additional_length / 8;
-	if (num == 0){
-		condlog (2, "%s: Path holding reservation is released.", mpp->wwid);
-		return MPATH_PR_SUCCESS;
-	}
-	if (!get_be64(mpp->reservation_key) ||
-	    memcmp(&mpp->reservation_key, resp.prin_descriptor.prin_readresv.key, 8)) {
+	if (!check_holding_reservation(mpp, &res_type)) {
 		condlog(2, "%s: Releasing key not holding reservation.", mpp->wwid);
 		return MPATH_PR_SUCCESS;
 	}
-
-	scope_type = resp.prin_descriptor.prin_readresv.scope_type;
-	if ((scope_type & MPATH_PR_TYPE_MASK) != rq_type) {
+	if (res_type != rq_type) {
 		condlog(2, "%s: --prout_type %u doesn't match reservation %u",
-			mpp->wwid, rq_type, scope_type & MPATH_PR_TYPE_MASK);
+			mpp->wwid, rq_type, res_type);
 		return MPATH_PR_RESERV_CONFLICT;
 	}
 
