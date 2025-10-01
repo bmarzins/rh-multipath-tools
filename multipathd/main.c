@@ -3402,7 +3402,6 @@ void set_pr(struct multipath *mpp)
 {
 	mpp->ever_registered_pr = true;
 	mpp->prflag = PR_SET;
-	memset(&mpp->old_pr_key, 0, 8);
 }
 
 void unset_pr(struct multipath *mpp)
