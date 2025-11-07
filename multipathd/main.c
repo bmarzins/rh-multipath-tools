@@ -1437,6 +1437,7 @@ uev_update_path (struct uevent *uev, struct vectors * vecs)
 	struct config *conf;
 	int needs_reinit = 0;
 
+	condlog(0, "%s: update path (uevent)", uev->kernel);
 	switch ((rc = change_foreign(uev->udev))) {
 	case FOREIGN_OK:
 		/* known foreign path, ignore event */

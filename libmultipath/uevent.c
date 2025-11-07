@@ -303,9 +303,11 @@ static void
 uevent_prepare(struct list_head *tmpq)
 {
 	struct uevent *uev, *tmp;
+	unsigned int discard_count = 0;
 
 	list_for_each_entry_reverse_safe(uev, tmp, tmpq, node) {
 		if (uevent_can_discard(uev)) {
+			discard_count++;
 			list_del_init(&uev->node);
 			if (uev->udev)
 				udev_device_unref(uev->udev);
@@ -317,12 +319,15 @@ uevent_prepare(struct list_head *tmpq)
 		    uevent_need_merge())
 			uevent_get_wwid(uev);
 	}
+	if (discard_count != 0)
+		condlog(0, "%u events discarded", discard_count);
 }
 
 static void
 uevent_filter(struct uevent *later, struct list_head *tmpq)
 {
 	struct uevent *earlier, *tmp;
+	unsigned int filter_count = 0;
 
 	list_for_some_entry_reverse_safe(earlier, tmp, &later->node, tmpq, node) {
 		/*
@@ -330,6 +335,7 @@ uevent_filter(struct uevent *later, struct list_head *tmpq)
 		 * by the later uevent
 		 */
 		if (uevent_can_filter(earlier, later)) {
+			filter_count++;
 			condlog(0, "uevent: %s-%s has filtered by uevent: %s-%s",
 				earlier->kernel, earlier->action,
 				later->kernel, later->action);
@@ -340,12 +346,15 @@ uevent_filter(struct uevent *later, struct list_head *tmpq)
 			FREE(earlier);
 		}
 	}
+	if (filter_count != 0)
+		condlog(0, "%u events filtered", filter_count);
 }
 
 static void
 uevent_merge(struct uevent *later, struct list_head *tmpq)
 {
 	struct uevent *earlier, *tmp;
+	unsigned int merge_count = 0;
 
 	list_for_some_entry_reverse_safe(earlier, tmp, &later->node, tmpq, node) {
 		if (merge_need_stop(earlier, later))
@@ -354,13 +363,16 @@ uevent_merge(struct uevent *later, struct list_head *tmpq)
 		 * merge earlier uevents to the later uevent
 		 */
 		if (uevent_can_merge(earlier, later)) {
-			condlog(3, "merged uevent: %s-%s-%s with uevent: %s-%s-%s",
+			merge_count++;
+			condlog(0, "merged uevent: %s-%s-%s with uevent: %s-%s-%s",
 				earlier->action, earlier->kernel, earlier->wwid,
 				later->action, later->kernel, later->wwid);
 
 			list_move(&earlier->node, &later->merge_node);
 		}
 	}
+	if (merge_count != 0)
+		condlog(0, "%u events merged", merge_count);
 }
 
 static void
@@ -380,8 +392,10 @@ static void
 service_uevq(struct list_head *tmpq)
 {
 	struct uevent *uev, *tmp;
+	unsigned int service_count = 0;
 
 	list_for_each_entry_safe(uev, tmp, tmpq, node) {
+		service_count++;
 		list_del_init(&uev->node);
 
 		if (my_uev_trigger && my_uev_trigger(uev, my_trigger_data))
@@ -393,6 +407,8 @@ service_uevq(struct list_head *tmpq)
 			udev_device_unref(uev->udev);
 		FREE(uev);
 	}
+	if (service_count != 0)
+		condlog(0, "%u events serviced", service_count);
 }
 
 static void uevent_cleanup(void *arg)
@@ -640,7 +656,7 @@ int uevent_listen(struct udev *udev)
 			/*
 			 * Queue uevents and poke service pthread.
 			 */
-			condlog(3, "Forwarding %d uevents", events);
+			condlog(0, "Forwarding %d uevents", events);
 			pthread_mutex_lock(uevq_lockp);
 			list_splice_tail_init(&uevlisten_tmp, &uevq);
 			pthread_cond_signal(uev_condp);
