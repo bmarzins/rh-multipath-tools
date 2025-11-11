@@ -47,6 +47,5 @@ int get_prhold(char *mapname);
 int update_prhold(char *mapname, bool set);
 #define update_prkey(mapname, prkey) update_prkey_flags(mapname, prkey, 0)
 void * mpath_alloc_prin_response(int prin_sa);
-int update_map_pr(struct multipath *mpp, struct path *pp);
 
 #endif
