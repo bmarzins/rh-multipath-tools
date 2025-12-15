@@ -226,6 +226,7 @@ load_keys (void)
 	r += add_key(keys, "getprhold", GETPRHOLD, 0);
 	r += add_key(keys, "setprhold", SETPRHOLD, 0);
 	r += add_key(keys, "unsetprhold", UNSETPRHOLD, 0);
+	r += add_key(keys, "pathlist", PATHLIST, 1);
 
 	if (r) {
 		free_keys(keys);
@@ -572,6 +573,7 @@ cli_init (void) {
 	add_handler(SHUTDOWN, NULL);
 	add_handler(GETPRSTATUS+MAP, NULL);
 	add_handler(SETPRSTATUS+MAP, NULL);
+	add_handler(SETPRSTATUS+MAP+PATHLIST, NULL);
 	add_handler(UNSETPRSTATUS+MAP, NULL);
 	add_handler(GETPRKEY+MAP, NULL);
 	add_handler(SETPRKEY+MAP+KEY, NULL);

@@ -32,6 +32,7 @@
 #include "foreign.h"
 #include "strbuf.h"
 #include "cli_handlers.h"
+#include <ctype.h>
 
 #define SET_REPLY_AND_LEN(__rep, __len, string_literal)			\
 	do {								\
@@ -1308,8 +1309,8 @@ cli_getprstatus (void * v, char ** reply, int * len, void * data)
 	return 0;
 }
 
-int
-cli_setprstatus(void * v, char ** reply, int * len, void * data)
+static int do_setprstatus(void * v, char ** reply, int * len, void * data,
+			  const struct _vector *registered_paths)
 {
 	struct multipath * mpp;
 	struct vectors * vecs = (struct vectors *)data;
@@ -1324,7 +1325,7 @@ cli_setprstatus(void * v, char ** reply, int * len, void * data)
 
 	if (mpp->prflag != PR_SET) {
 		set_pr(mpp);
-		pr_register_active_paths(mpp, true);
+		pr_register_active_paths(mpp, registered_paths);
 		if (mpp->prflag == PR_SET)
 			condlog(2, "%s: prflag set", param);
 		else
@@ -1334,6 +1335,36 @@ cli_setprstatus(void * v, char ** reply, int * len, void * data)
 
 
 	return 0;
+}
+
+int
+cli_setprstatus(void * v, char ** reply, int * len, void * data)
+{
+	return do_setprstatus(v, reply, len, data, NULL);
+}
+
+int
+cli_setprstatus_list(void * v, char ** reply, int * len, void *data)
+{
+	int r;
+	struct _vector registered_paths_vec = {.allocated = 0};
+	vector registered_paths
+		__attribute__((cleanup(cleanup_reset_vec))) = &registered_paths_vec;
+	char *ptr = get_keyparam(v, PATHLIST);
+
+	while (isspace(*ptr))
+		ptr++;
+	while (*ptr) {
+		if (!vector_alloc_slot(registered_paths))
+			return -ENOMEM;
+		vector_set_slot(registered_paths, ptr);
+		while (*ptr && !isspace(*ptr))
+			ptr++;
+		while (isspace(*ptr))
+			*ptr++ = '\0';
+	}
+	r = do_setprstatus(v, reply, len, data, registered_paths);
+	return r;
 }
 
 int

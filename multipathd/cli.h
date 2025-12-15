@@ -50,6 +50,7 @@ enum {
 	__GETPRHOLD,
 	__SETPRHOLD,
 	__UNSETPRHOLD,
+	__PATHLIST,
 };
 
 #define LIST		(1 << __LIST)
@@ -99,6 +100,7 @@ enum {
 #define GETPRHOLD	(1ULL << __GETPRHOLD)
 #define SETPRHOLD	(1ULL << __SETPRHOLD)
 #define UNSETPRHOLD	(1ULL << __UNSETPRHOLD)
+#define PATHLIST	(1ULL << __PATHLIST)
 
 #define INITIAL_REPLY_LEN	1200
 

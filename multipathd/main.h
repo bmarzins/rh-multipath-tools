@@ -60,5 +60,7 @@ int resize_map(struct multipath *mpp, unsigned long long size,
 	       struct vectors *vecs);
 void set_pr(struct multipath *mpp);
 void unset_pr(struct multipath *mpp);
-void pr_register_active_paths(struct multipath *mpp, bool check_active_nr);
+void pr_register_active_paths(struct multipath *mpp,
+			      const struct _vector *registered_paths);
+void cleanup_reset_vec(struct _vector **v);
 #endif /* MAIN_H */

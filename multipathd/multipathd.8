@@ -324,11 +324,17 @@ will not be disabled when the daemon stops.
 Restores configured queue_without_daemon mode.
 .
 .TP
-.B map|multipath $map setprstatus
+.B setprstatus map|multipath $map
 Enable persistent reservation management on $map.
 .
 .TP
-.B map|multipath $map unsetprstatus
+.B setprstatus map|multipath $map pathlist $pathlist
+Enable persistent reservation management on $map, and notify multipathd of
+the paths that have been registered, so it doesn't attempt to re-register
+them.
+.
+.TP
+.B unsetprstatus map|multipath $map
 Disable persistent reservation management on $map.
 .
 .TP

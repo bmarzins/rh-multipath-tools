@@ -40,7 +40,7 @@ int mpath_prout_rel(struct multipath *mpp,int rq_servact, int rq_scope,
 	unsigned int rq_type, struct prout_param_descriptor *paramp, int noisy,
 	bool unregister);
 
-int update_prflag(char *mapname, int set);
+int update_prflag(struct multipath *mpp, int set);
 int update_prkey_flags(char *mapname, uint64_t prkey, uint8_t sa_flags);
 int get_prflag(char *mapname);
 int get_prhold(char *mapname);

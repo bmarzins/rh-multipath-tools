@@ -46,6 +46,7 @@ int cli_shutdown(void * v, char ** reply, int * len, void * data);
 int cli_reassign (void * v, char ** reply, int * len, void * data);
 int cli_getprstatus(void * v, char ** reply, int * len, void * data);
 int cli_setprstatus(void * v, char ** reply, int * len, void * data);
+int cli_setprstatus_list(void * v, char ** reply, int * len, void * data);
 int cli_unsetprstatus(void * v, char ** reply, int * len, void * data);
 int cli_getprkey(void * v, char ** reply, int * len, void * data);
 int cli_setprkey(void * v, char ** reply, int * len, void * data);

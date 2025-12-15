@@ -527,12 +527,12 @@ static int do_mpath_persistent_reserve_out(vector curmp, vector pathvec, int fd,
 	case MPATH_PROUT_REG_SA:
 	case MPATH_PROUT_REG_IGN_SA:
 		if (unregistering)
-			update_prflag(alias, 0);
+			update_prflag(mpp, 0);
 		else
-			update_prflag(alias, 1);
+			update_prflag(mpp, 1);
 		break;
 	case MPATH_PROUT_CLEAR_SA:
-		update_prflag(alias, 0);
+		update_prflag(mpp, 0);
 		if (mpp->prkey_source == PRKEY_SOURCE_FILE)
 			update_prkey(alias, 0);
 		break;
