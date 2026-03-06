@@ -1685,6 +1685,7 @@ path_offline (struct path * pp)
 	memset(buff, 0x0, SCSI_STATE_SIZE);
 	err = sysfs_attr_get_value(parent, "state", buff, SCSI_STATE_SIZE);
 	if (err <= 0) {
+		pp->offline = 1;
 		if (err == -ENXIO)
 			return PATH_REMOVED;
 		else
@@ -1719,7 +1720,7 @@ path_offline (struct path * pp)
 		else if (!strncmp(buff, "live", 4))
 			return PATH_UP;
 	}
-
+	pp->offline = 1;
 	return PATH_DOWN;
 }
 
