@@ -177,7 +177,7 @@ struct vpd83_dscr {
 } __attribute__((packed));
 
 static inline int
-vpd83_dscr_istype(struct vpd83_dscr *d, unsigned char type)
+vpd83_dscr_istype(const struct vpd83_dscr *d, unsigned char type)
 {
 	return ((d->b1 & 7) == type);
 }
@@ -190,21 +190,7 @@ struct vpd83_data {
 	struct vpd83_dscr	data[0];
 } __attribute__((packed));
 
-/*-----------------------------------------------------------------------------
- * This macro should be used to walk through all identification descriptors
- * defined in the code page 0x83.
- * The argument p is a pointer to the code page 0x83 data and d is used to
- * point to the current descriptor.
- *-----------------------------------------------------------------------------
- */
-#define FOR_EACH_VPD83_DSCR(p, d) \
-		for( \
-			d = p->data; \
-			(((char *) d) - ((char *) p)) < \
-			get_unaligned_be16(p->length); \
-			d = (struct vpd83_dscr *) \
-				((char *) d + d->length + 4) \
-		)
+#define VPD_BUFLEN 4096
 
 /*=============================================================================
  * The following structures and macros are used to call the report target port
