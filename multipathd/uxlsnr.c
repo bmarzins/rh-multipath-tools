@@ -384,21 +384,25 @@ static int execute_handler(struct client *c, struct vectors *vecs)
 	return c->handler->fn(c->cmdvec, &c->reply, vecs);
 }
 
-static void wakeup_listener(void)
+static void wakeup_listener(int event_fd)
 {
 	uint64_t one = 1;
 
-	if (idle_fd != -1 &&
-	    write(idle_fd, &one, sizeof(one)) != sizeof(one))
+	if (event_fd != -1 && write(event_fd, &one, sizeof(one)) != sizeof(one))
 		condlog(1, "%s: failed", __func__);
 }
 
-static void drain_idle_fd(int fd)
+static void wakeup_idle_listener(void)
+{
+	wakeup_listener(idle_fd);
+}
+
+static void drain_event_fd(int event_fd)
 {
 	uint64_t val;
 	int rc;
 
-	rc = read(fd, &val, sizeof(val));
+	rc = read(event_fd, &val, sizeof(val));
 	condlog(4, "%s: %d, %"PRIu64, __func__, rc, val);
 }
 
@@ -665,7 +669,7 @@ void *uxsock_listen(int n_socks, long *ux_sock_in, void *trigger_data)
 		condlog(1, "failed to create idle fd");
 		exit_daemon();
 	} else
-		set_wakeup_fn(&vecs->lock, wakeup_listener);
+		set_wakeup_fn(&vecs->lock, wakeup_idle_listener);
 
 	sigfillset(&mask);
 	sigdelset(&mask, SIGINT);
@@ -769,7 +773,7 @@ void *uxsock_listen(int n_socks, long *ux_sock_in, void *trigger_data)
 
 		if (polls[POLLFD_IDLE].fd != -1 &&
 		    polls[POLLFD_IDLE].revents & POLLIN)
-			drain_idle_fd(idle_fd);
+			drain_event_fd(idle_fd);
 
 		/* see if a client needs handling */
 		list_for_each_entry_safe(c, tmp, &clients, node) {
