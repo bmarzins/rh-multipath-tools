@@ -2,6 +2,7 @@
 #define CLI_H_INCLUDED
 
 #include <stdint.h>
+#include "list.h"
 
 /*
  * CLI commands consist of 4 bytes, a verb (byte 0) and up to
@@ -133,7 +134,8 @@ struct key {
 
 struct strbuf;
 
-typedef int (cli_handler)(void *keywords, struct strbuf *reply, void *data);
+typedef int (cli_handler)(void *keywords, struct strbuf *reply,
+			  struct list_head *wait_node, void *data);
 
 struct handler {
 	uint32_t fingerprint;

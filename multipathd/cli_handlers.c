@@ -184,8 +184,8 @@ reset_stats(struct multipath * mpp)
 	mpp->stat_map_failures = 0;
 }
 
-static int
-cli_list_config (void *v, struct strbuf *reply, void *data)
+static int cli_list_config(void *v, struct strbuf *reply,
+			   struct list_head *wait_node, void *data)
 {
 	condlog(3, "list config (operator)");
 
@@ -197,8 +197,8 @@ static void v_free(void *x)
 	vector_free(x);
 }
 
-static int
-cli_list_config_local (void *v, struct strbuf *reply, void *data)
+static int cli_list_config_local(void *v, struct strbuf *reply,
+				 struct list_head *wait_node, void *data)
 {
 	struct vectors *vecs = (struct vectors *)data;
 	vector hwes;
@@ -213,8 +213,8 @@ cli_list_config_local (void *v, struct strbuf *reply, void *data)
 	return ret;
 }
 
-static int
-cli_list_paths (void *v, struct strbuf *reply, void *data)
+static int cli_list_paths(void *v, struct strbuf *reply,
+			  struct list_head *wait_node, void *data)
 {
 	struct vectors * vecs = (struct vectors *)data;
 
@@ -223,8 +223,8 @@ cli_list_paths (void *v, struct strbuf *reply, void *data)
 	return show_paths(reply, vecs, PRINT_PATH_CHECKER, 1);
 }
 
-static int
-cli_list_paths_fmt (void *v, struct strbuf *reply, void *data)
+static int cli_list_paths_fmt(void *v, struct strbuf *reply,
+			      struct list_head *wait_node, void *data)
 {
 	struct vectors * vecs = (struct vectors *)data;
 	char * fmt = get_keyparam(v, KEY_FMT);
@@ -234,8 +234,8 @@ cli_list_paths_fmt (void *v, struct strbuf *reply, void *data)
 	return show_paths(reply, vecs, fmt, 1);
 }
 
-static int
-cli_list_paths_raw (void *v, struct strbuf *reply, void * data)
+static int cli_list_paths_raw(void *v, struct strbuf *reply,
+			      struct list_head *wait_node, void *data)
 {
 	struct vectors * vecs = (struct vectors *)data;
 	char * fmt = get_keyparam(v, KEY_FMT);
@@ -245,8 +245,8 @@ cli_list_paths_raw (void *v, struct strbuf *reply, void * data)
 	return show_paths(reply, vecs, fmt, 0);
 }
 
-static int
-cli_list_path (void *v, struct strbuf *reply, void *data)
+static int cli_list_path(void *v, struct strbuf *reply,
+			 struct list_head *wait_node, void *data)
 {
 	struct vectors * vecs = (struct vectors *)data;
 	char * param = get_keyparam(v, KEY_PATH);
@@ -262,8 +262,8 @@ cli_list_path (void *v, struct strbuf *reply, void *data)
 	return show_path(reply, vecs, pp, "%o");
 }
 
-static int
-cli_list_map_topology (void *v, struct strbuf *reply, void *data)
+static int cli_list_map_topology(void *v, struct strbuf *reply,
+				 struct list_head *wait_node, void *data)
 {
 	struct multipath * mpp;
 	struct vectors * vecs = (struct vectors *)data;
@@ -284,8 +284,8 @@ cli_list_map_topology (void *v, struct strbuf *reply, void *data)
 	return show_map_topology(reply, mpp, vecs, p_width);
 }
 
-static int
-cli_list_maps_topology (void *v, struct strbuf *reply, void *data)
+static int cli_list_maps_topology(void *v, struct strbuf *reply,
+				  struct list_head *wait_node, void *data)
 {
 	struct vectors * vecs = (struct vectors *)data;
 
@@ -294,8 +294,8 @@ cli_list_maps_topology (void *v, struct strbuf *reply, void *data)
 	return show_maps_topology(reply, vecs);
 }
 
-static int
-cli_list_map_json (void *v, struct strbuf *reply, void *data)
+static int cli_list_map_json(void *v, struct strbuf *reply,
+			     struct list_head *wait_node, void *data)
 {
 	struct multipath * mpp;
 	struct vectors * vecs = (struct vectors *)data;
@@ -312,8 +312,8 @@ cli_list_map_json (void *v, struct strbuf *reply, void *data)
 	return show_map_json(reply, mpp, vecs);
 }
 
-static int
-cli_list_maps_json (void *v, struct strbuf *reply, void *data)
+static int cli_list_maps_json(void *v, struct strbuf *reply,
+			      struct list_head *wait_node, void *data)
 {
 	struct vectors * vecs = (struct vectors *)data;
 
@@ -322,8 +322,8 @@ cli_list_maps_json (void *v, struct strbuf *reply, void *data)
 	return show_maps_json(reply, vecs);
 }
 
-static int
-cli_list_wildcards (void *v, struct strbuf *reply, void *data)
+static int cli_list_wildcards(void *v, struct strbuf *reply,
+			      struct list_head *wait_node, void *data)
 {
 	if (snprint_wildcards(reply) < 0)
 		return 1;
@@ -404,8 +404,8 @@ show_maps (struct strbuf *reply, struct vectors *vecs, char *style,
 	return 0;
 }
 
-static int
-cli_list_maps_fmt (void *v, struct strbuf *reply, void *data)
+static int cli_list_maps_fmt(void *v, struct strbuf *reply,
+			     struct list_head *wait_node, void *data)
 {
 	struct vectors * vecs = (struct vectors *)data;
 	char * fmt = get_keyparam(v, KEY_FMT);
@@ -415,8 +415,8 @@ cli_list_maps_fmt (void *v, struct strbuf *reply, void *data)
 	return show_maps(reply, vecs, fmt, 1);
 }
 
-static int
-cli_list_maps_raw (void *v, struct strbuf *reply, void *data)
+static int cli_list_maps_raw(void *v, struct strbuf *reply,
+			     struct list_head *wait_node, void *data)
 {
 	struct vectors * vecs = (struct vectors *)data;
 	char * fmt = get_keyparam(v, KEY_FMT);
@@ -426,8 +426,8 @@ cli_list_maps_raw (void *v, struct strbuf *reply, void *data)
 	return show_maps(reply, vecs, fmt, 0);
 }
 
-static int
-cli_list_map_fmt (void *v, struct strbuf *reply, void *data)
+static int cli_list_map_fmt(void *v, struct strbuf *reply,
+			    struct list_head *wait_node, void *data)
 {
 	struct multipath * mpp;
 	struct vectors * vecs = (struct vectors *)data;
@@ -448,8 +448,8 @@ cli_list_map_fmt (void *v, struct strbuf *reply, void *data)
 	return show_map(reply, mpp, fmt, width);
 }
 
-static int
-cli_list_maps (void *v, struct strbuf *reply, void *data)
+static int cli_list_maps(void *v, struct strbuf *reply,
+			 struct list_head *wait_node, void *data)
 {
 	struct vectors * vecs = (struct vectors *)data;
 
@@ -458,8 +458,8 @@ cli_list_maps (void *v, struct strbuf *reply, void *data)
 	return show_maps(reply, vecs, PRINT_MAP_NAMES, 1);
 }
 
-static int
-cli_list_status (void *v, struct strbuf *reply, void *data)
+static int cli_list_status(void *v, struct strbuf *reply,
+			   struct list_head *wait_node, void *data)
 {
 	struct vectors * vecs = (struct vectors *)data;
 
@@ -468,8 +468,8 @@ cli_list_status (void *v, struct strbuf *reply, void *data)
 	return show_status(reply, vecs);
 }
 
-static int
-cli_list_maps_status (void *v, struct strbuf *reply, void *data)
+static int cli_list_maps_status(void *v, struct strbuf *reply,
+				struct list_head *wait_node, void *data)
 {
 	struct vectors * vecs = (struct vectors *)data;
 
@@ -478,8 +478,8 @@ cli_list_maps_status (void *v, struct strbuf *reply, void *data)
 	return show_maps(reply, vecs, PRINT_MAP_STATUS, 1);
 }
 
-static int
-cli_list_maps_stats (void *v, struct strbuf *reply, void *data)
+static int cli_list_maps_stats(void *v, struct strbuf *reply,
+			       struct list_head *wait_node, void *data)
 {
 	struct vectors * vecs = (struct vectors *)data;
 
@@ -488,16 +488,16 @@ cli_list_maps_stats (void *v, struct strbuf *reply, void *data)
 	return show_maps(reply, vecs, PRINT_MAP_STATS, 1);
 }
 
-static int
-cli_list_daemon (void *v, struct strbuf *reply, void *data)
+static int cli_list_daemon(void *v, struct strbuf *reply,
+			   struct list_head *wait_node, void *data)
 {
 	condlog(3, "list daemon (operator)");
 
 	return show_daemon(reply);
 }
 
-static int
-cli_reset_maps_stats (void *v, struct strbuf *reply, void *data)
+static int cli_reset_maps_stats(void *v, struct strbuf *reply,
+				struct list_head *wait_node, void *data)
 {
 	struct vectors * vecs = (struct vectors *)data;
 	int i;
@@ -511,8 +511,8 @@ cli_reset_maps_stats (void *v, struct strbuf *reply, void *data)
 	return 0;
 }
 
-static int
-cli_reset_map_stats (void *v, struct strbuf *reply, void *data)
+static int cli_reset_map_stats(void *v, struct strbuf *reply,
+			       struct list_head *wait_node, void *data)
 {
 	struct vectors * vecs = (struct vectors *)data;
 	struct multipath * mpp;
@@ -560,8 +560,8 @@ add_partial_path(struct path *pp, struct vectors *vecs)
 	return finish_path_init(pp, vecs);
 }
 
-static int
-cli_add_path (void *v, struct strbuf *reply, void *data)
+static int cli_add_path(void *v, struct strbuf *reply,
+			struct list_head *wait_node, void *data)
 {
 	struct vectors * vecs = (struct vectors *)data;
 	char * param = get_keyparam(v, KEY_PATH);
@@ -680,8 +680,8 @@ blacklisted:
 	return 0;
 }
 
-static int
-cli_del_path (void * v, struct strbuf *reply, void * data)
+static int cli_del_path(void *v, struct strbuf *reply,
+			struct list_head *wait_node, void *data)
 {
 	struct vectors * vecs = (struct vectors *)data;
 	char * param = get_keyparam(v, KEY_PATH);
@@ -703,8 +703,8 @@ cli_del_path (void * v, struct strbuf *reply, void * data)
 	return (ret == REMOVE_PATH_FAILURE);
 }
 
-static int
-cli_add_map (void * v, struct strbuf *reply, void * data)
+static int cli_add_map(void *v, struct strbuf *reply,
+		       struct list_head *wait_node, void *data)
 {
 	struct vectors * vecs = (struct vectors *)data;
 	char * param = get_keyparam(v, KEY_MAP);
@@ -749,8 +749,8 @@ cli_add_map (void * v, struct strbuf *reply, void * data)
 	return rc;
 }
 
-static int
-cli_del_map (void * v, struct strbuf *reply, void * data)
+static int cli_del_map(void *v, struct strbuf *reply,
+		       struct list_head *wait_node, void *data)
 {
 	struct vectors * vecs = (struct vectors *)data;
 	char * param = get_keyparam(v, KEY_MAP);
@@ -773,8 +773,8 @@ cli_del_map (void * v, struct strbuf *reply, void * data)
 	return 1;
 }
 
-static int
-cli_del_maps (void *v, struct strbuf *reply, void *data)
+static int cli_del_maps(void *v, struct strbuf *reply,
+			struct list_head *wait_node, void *data)
 {
 	struct vectors * vecs = (struct vectors *)data;
 	struct multipath *mpp;
@@ -799,8 +799,8 @@ cli_del_maps (void *v, struct strbuf *reply, void *data)
 	return r;
 }
 
-static int
-cli_reload(void *v, struct strbuf *reply, void *data)
+static int cli_reload(void *v, struct strbuf *reply,
+		      struct list_head *wait_node, void *data)
 {
 	struct vectors * vecs = (struct vectors *)data;
 	char * mapname = get_keyparam(v, KEY_MAP);
@@ -823,8 +823,8 @@ cli_reload(void *v, struct strbuf *reply, void *data)
 	return reload_and_sync_map(mpp, vecs);
 }
 
-static int
-cli_resize(void *v, struct strbuf *reply, void *data)
+static int cli_resize(void *v, struct strbuf *reply,
+		      struct list_head *wait_node, void *data)
 {
 	struct vectors * vecs = (struct vectors *)data;
 	char * mapname = get_keyparam(v, KEY_MAP);
@@ -885,8 +885,8 @@ cli_resize(void *v, struct strbuf *reply, void *data)
 	return (ret != 0);
 }
 
-static int
-cli_force_no_daemon_q(void * v, struct strbuf *reply, void * data)
+static int cli_force_no_daemon_q(void *v, struct strbuf *reply,
+				 struct list_head *wait_node, void *data)
 {
 	struct config *conf;
 
@@ -898,8 +898,8 @@ cli_force_no_daemon_q(void * v, struct strbuf *reply, void * data)
 	return 0;
 }
 
-static int
-cli_restore_no_daemon_q(void * v, struct strbuf *reply, void * data)
+static int cli_restore_no_daemon_q(void *v, struct strbuf *reply,
+				   struct list_head *wait_node, void *data)
 {
 	struct config *conf;
 
@@ -911,8 +911,8 @@ cli_restore_no_daemon_q(void * v, struct strbuf *reply, void * data)
 	return 0;
 }
 
-static int
-cli_restore_queueing(void *v, struct strbuf *reply, void *data)
+static int cli_restore_queueing(void *v, struct strbuf *reply,
+				struct list_head *wait_node, void *data)
 {
 	struct vectors * vecs = (struct vectors *)data;
 	char * mapname = get_keyparam(v, KEY_MAP);
@@ -939,8 +939,8 @@ cli_restore_queueing(void *v, struct strbuf *reply, void *data)
 	return 0;
 }
 
-static int
-cli_restore_all_queueing(void *v, struct strbuf *reply, void *data)
+static int cli_restore_all_queueing(void *v, struct strbuf *reply,
+				    struct list_head *wait_node, void *data)
 {
 	struct vectors * vecs = (struct vectors *)data;
 	struct multipath *mpp;
@@ -962,8 +962,8 @@ cli_restore_all_queueing(void *v, struct strbuf *reply, void *data)
 	return 0;
 }
 
-static int
-cli_disable_queueing(void *v, struct strbuf *reply, void *data)
+static int cli_disable_queueing(void *v, struct strbuf *reply,
+				struct list_head *wait_node, void *data)
 {
 	struct vectors * vecs = (struct vectors *)data;
 	char * mapname = get_keyparam(v, KEY_MAP);
@@ -985,8 +985,8 @@ cli_disable_queueing(void *v, struct strbuf *reply, void *data)
 	return 0;
 }
 
-static int
-cli_disable_all_queueing(void *v, struct strbuf *reply, void *data)
+static int cli_disable_all_queueing(void *v, struct strbuf *reply,
+				    struct list_head *wait_node, void *data)
 {
 	struct vectors * vecs = (struct vectors *)data;
 	struct multipath *mpp;
@@ -1004,8 +1004,8 @@ cli_disable_all_queueing(void *v, struct strbuf *reply, void *data)
 	return 0;
 }
 
-static int
-cli_switch_group(void * v, struct strbuf *reply, void * data)
+static int cli_switch_group(void *v, struct strbuf *reply,
+			    struct list_head *wait_node, void *data)
 {
 	char * mapname = get_keyparam(v, KEY_MAP);
 	int groupnum = atoi(get_keyparam(v, KEY_GROUP));
@@ -1016,8 +1016,8 @@ cli_switch_group(void * v, struct strbuf *reply, void * data)
 	return dm_switchgroup(mapname, groupnum);
 }
 
-static int
-cli_reconfigure(void * v, struct strbuf *reply, void * data)
+static int cli_reconfigure(void *v, struct strbuf *reply,
+			   struct list_head *wait_node, void *data)
 {
 	condlog(2, "reconfigure (operator)");
 
@@ -1025,8 +1025,8 @@ cli_reconfigure(void * v, struct strbuf *reply, void * data)
 	return 0;
 }
 
-int
-cli_reconfigure_all(void * v, struct strbuf *reply, void * data)
+int cli_reconfigure_all(void *v, struct strbuf *reply,
+			struct list_head *wait_node, void *data)
 {
 	condlog(2, "reconfigure all (operator)");
 
@@ -1034,8 +1034,8 @@ cli_reconfigure_all(void * v, struct strbuf *reply, void * data)
 	return 0;
 }
 
-static int
-cli_suspend(void * v, struct strbuf *reply, void * data)
+static int cli_suspend(void *v, struct strbuf *reply,
+		       struct list_head *wait_node, void *data)
 {
 	struct vectors * vecs = (struct vectors *)data;
 	char * param = get_keyparam(v, KEY_MAP);
@@ -1064,8 +1064,8 @@ cli_suspend(void * v, struct strbuf *reply, void * data)
 	return 0;
 }
 
-static int
-cli_resume(void * v, struct strbuf *reply, void * data)
+static int cli_resume(void *v, struct strbuf *reply,
+		      struct list_head *wait_node, void *data)
 {
 	struct vectors * vecs = (struct vectors *)data;
 	char * param = get_keyparam(v, KEY_MAP);
@@ -1096,8 +1096,8 @@ cli_resume(void * v, struct strbuf *reply, void * data)
 	return 0;
 }
 
-static int
-cli_reinstate(void * v, struct strbuf *reply, void * data)
+static int cli_reinstate(void *v, struct strbuf *reply,
+			 struct list_head *wait_node, void *data)
 {
 	struct vectors * vecs = (struct vectors *)data;
 	char * param = get_keyparam(v, KEY_PATH);
@@ -1132,8 +1132,8 @@ cli_reinstate(void * v, struct strbuf *reply, void * data)
 	return dm_reinstate_path(pp->mpp->alias, pp->dev_t);
 }
 
-static int
-cli_reassign (void * v, struct strbuf *reply, void * data)
+static int cli_reassign(void *v, struct strbuf *reply,
+			struct list_head *wait_node, void *data)
 {
 	struct vectors * vecs = (struct vectors *)data;
 	char * param = get_keyparam(v, KEY_MAP);
@@ -1157,7 +1157,7 @@ cli_reassign (void * v, struct strbuf *reply, void * data)
 }
 
 static int
-cli_fail(void * v, struct strbuf *reply, void * data)
+cli_fail(void *v, struct strbuf *reply, struct list_head *wait_node, void *data)
 {
 	struct vectors * vecs = (struct vectors *)data;
 	char * param = get_keyparam(v, KEY_PATH);
@@ -1202,8 +1202,8 @@ show_blacklist (struct strbuf *reply)
 	return 0;
 }
 
-static int
-cli_list_blacklist (void * v, struct strbuf *reply, void * data)
+static int cli_list_blacklist(void *v, struct strbuf *reply,
+			      struct list_head *wait_node, void *data)
 {
 	condlog(3, "list blacklist (operator)");
 
@@ -1227,8 +1227,8 @@ show_devices (struct strbuf *reply, struct vectors *vecs)
 	return 0;
 }
 
-static int
-cli_list_devices (void * v, struct strbuf *reply, void * data)
+static int cli_list_devices(void *v, struct strbuf *reply,
+			    struct list_head *wait_node, void *data)
 {
 	struct vectors * vecs = (struct vectors *)data;
 
@@ -1238,13 +1238,13 @@ cli_list_devices (void * v, struct strbuf *reply, void * data)
 }
 
 static int
-cli_quit (void * v, struct strbuf *reply, void * data)
+cli_quit(void *v, struct strbuf *reply, struct list_head *wait_node, void *data)
 {
 	return 0;
 }
 
-static int
-cli_shutdown (void * v, struct strbuf *reply, void * data)
+static int cli_shutdown(void *v, struct strbuf *reply,
+			struct list_head *wait_node, void *data)
 {
 	condlog(3, "shutdown (operator)");
 	exit_daemon();
@@ -1257,8 +1257,8 @@ static const char *const pr_str[] = {
 	[PR_SET] = "set\n",
 };
 
-static int
-cli_getprstatus (void * v, struct strbuf *reply, void * data)
+static int cli_getprstatus(void *v, struct strbuf *reply,
+			   struct list_head *wait_node, void *data)
 {
 	struct multipath * mpp;
 	struct vectors * vecs = (struct vectors *)data;
@@ -1303,12 +1303,14 @@ static int do_setprstatus(void *v, struct strbuf *reply, void *data,
 	return 0;
 }
 
-static int cli_setprstatus(void *v, struct strbuf *reply, void *data)
+static int cli_setprstatus(void *v, struct strbuf *reply,
+			   struct list_head *wait_node, void *data)
 {
 	return do_setprstatus(v, reply, data, NULL);
 }
 
-static int cli_setprstatus_list(void *v, struct strbuf *reply, void *data)
+static int cli_setprstatus_list(void *v, struct strbuf *reply,
+				struct list_head *wait_node, void *data)
 {
 	int r;
 	struct vector_s registered_paths_vec = {.allocated = 0};
@@ -1331,8 +1333,8 @@ static int cli_setprstatus_list(void *v, struct strbuf *reply, void *data)
 	return r;
 }
 
-static int
-cli_unsetprstatus(void * v, struct strbuf *reply, void * data)
+static int cli_unsetprstatus(void *v, struct strbuf *reply,
+			     struct list_head *wait_node, void *data)
 {
 	struct multipath * mpp;
 	struct vectors * vecs = (struct vectors *)data;
@@ -1354,8 +1356,8 @@ cli_unsetprstatus(void * v, struct strbuf *reply, void * data)
 	return 0;
 }
 
-static int
-cli_getprkey(void * v, struct strbuf *reply, void * data)
+static int cli_getprkey(void *v, struct strbuf *reply,
+			struct list_head *wait_node, void *data)
 {
 	struct multipath * mpp;
 	struct vectors * vecs = (struct vectors *)data;
@@ -1381,8 +1383,8 @@ cli_getprkey(void * v, struct strbuf *reply, void * data)
 	return 0;
 }
 
-static int
-cli_unsetprkey(void * v, struct strbuf *reply, void * data)
+static int cli_unsetprkey(void *v, struct strbuf *reply,
+			  struct list_head *wait_node, void *data)
 {
 	struct multipath * mpp;
 	struct vectors * vecs = (struct vectors *)data;
@@ -1405,8 +1407,8 @@ cli_unsetprkey(void * v, struct strbuf *reply, void * data)
 	return ret;
 }
 
-static int
-cli_setprkey(void * v, struct strbuf *reply, void * data)
+static int cli_setprkey(void *v, struct strbuf *reply,
+			struct list_head *wait_node, void *data)
 {
 	struct multipath * mpp;
 	struct vectors * vecs = (struct vectors *)data;
@@ -1452,17 +1454,20 @@ static int do_prhold(struct vectors *vecs, char *param, int prhold)
 	return 0;
 }
 
-static int cli_setprhold(void *v, struct strbuf *reply, void *data)
+static int cli_setprhold(void *v, struct strbuf *reply,
+			 struct list_head *wait_node, void *data)
 {
 	return do_prhold((struct vectors *)data, get_keyparam(v, KEY_MAP), PR_SET);
 }
 
-static int cli_unsetprhold(void *v, struct strbuf *reply, void *data)
+static int cli_unsetprhold(void *v, struct strbuf *reply,
+			   struct list_head *wait_node, void *data)
 {
 	return do_prhold((struct vectors *)data, get_keyparam(v, KEY_MAP), PR_UNSET);
 }
 
-static int cli_getprhold(void *v, struct strbuf *reply, void *data)
+static int cli_getprhold(void *v, struct strbuf *reply,
+			 struct list_head *wait_node, void *data)
 {
 	struct multipath *mpp;
 	struct vectors *vecs = (struct vectors *)data;
@@ -1479,7 +1484,8 @@ static int cli_getprhold(void *v, struct strbuf *reply, void *data)
 	return 0;
 }
 
-static int cli_set_marginal(void * v, struct strbuf *reply, void * data)
+static int cli_set_marginal(void *v, struct strbuf *reply,
+			    struct list_head *wait_node, void *data)
 {
 	struct vectors * vecs = (struct vectors *)data;
 	char * param = get_keyparam(v, KEY_PATH);
@@ -1506,7 +1512,8 @@ static int cli_set_marginal(void * v, struct strbuf *reply, void * data)
 	return reload_and_sync_map(pp->mpp, vecs);
 }
 
-static int cli_unset_marginal(void * v, struct strbuf *reply, void * data)
+static int cli_unset_marginal(void *v, struct strbuf *reply,
+			      struct list_head *wait_node, void *data)
 {
 	struct vectors * vecs = (struct vectors *)data;
 	char * param = get_keyparam(v, KEY_PATH);
@@ -1533,7 +1540,8 @@ static int cli_unset_marginal(void * v, struct strbuf *reply, void * data)
 	return reload_and_sync_map(pp->mpp, vecs);
 }
 
-static int cli_unset_all_marginal(void * v, struct strbuf *reply, void * data)
+static int cli_unset_all_marginal(void *v, struct strbuf *reply,
+				  struct list_head *wait_node, void *data)
 {
 	struct vectors * vecs = (struct vectors *)data;
 	char * mapname = get_keyparam(v, KEY_MAP);

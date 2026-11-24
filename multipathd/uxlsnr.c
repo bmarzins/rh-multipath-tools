@@ -393,7 +393,7 @@ static int execute_handler(struct client *c, struct vectors *vecs)
 	if (!c->handler || !c->handler->fn)
 		return -EINVAL;
 
-	return c->handler->fn(c->cmdvec, &c->reply, vecs);
+	return c->handler->fn(c->cmdvec, &c->reply, &c->wait_node, vecs);
 }
 
 int init_wait_fd(void)
