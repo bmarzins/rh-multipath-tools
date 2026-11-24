@@ -2009,6 +2009,12 @@ uxlsnrloop (void * ap)
 		goto out_sock;
 	}
 
+	if (init_wait_fd() < 0) {
+		condlog(1, "Failed to open wait_fd: %m");
+		exit_daemon();
+		goto out_sock;
+	}
+
 	/* Tell main thread that thread has started */
 	post_config_state(DAEMON_CONFIGURE);
 
@@ -3917,6 +3923,7 @@ static void cleanup_child(void)
 	cleanup_threads();
 	cleanup_vecs();
 	cleanup_bindings();
+	cleanup_wait_fd();
 	if (poll_dmevents)
 		cleanup_dmevent_waiter();
 

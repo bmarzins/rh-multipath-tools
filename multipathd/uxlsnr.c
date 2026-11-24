@@ -49,11 +49,13 @@ enum {
 	CLT_PARSE,
 	CLT_LOCKED_WORK,
 	CLT_WORK,
+	CLT_WAIT,
 	CLT_SEND,
 };
 
 struct client {
 	struct list_head node;
+	struct list_head wait_node; /* for clients waiting on an event */
 	struct timespec expires;
 	int state;
 	int fd;
@@ -73,8 +75,12 @@ enum {
 	POLLFD_UX2,
 	POLLFD_NOTIFY,
 	POLLFD_IDLE,
+	POLLFD_WAIT,
 	POLLFDS_BASE,
 };
+
+/* Add a new revents value to signal that a waiter wakeup event occurred */
+#define POLLWAIT 0x10000
 
 #define POLLFD_CHUNK (4096 / sizeof(struct pollfd))
 /* Minimum number of pollfds to reserve for clients */
@@ -99,6 +105,8 @@ static LIST_HEAD(clients);
 static struct pollfd *polls;
 static int notify_fd = -1;
 static int idle_fd = -1;
+static int wait_fd = -1;
+static pthread_mutex_t client_wait_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool clients_need_lock = false;
 
 static bool _socket_client_is_root(int fd)
@@ -116,6 +124,8 @@ static bool _socket_client_is_root(int fd)
 	return false;
 }
 
+static void stop_waiting_for_event(struct client *c);
+
 /*
  * kill off a dead client
  */
@@ -123,6 +133,7 @@ static void dead_client(struct client *c)
 {
 	int fd = c->fd;
 	list_del_init(&c->node);
+	stop_waiting_for_event(c);
 	c->fd = -1;
 	reset_strbuf(&c->reply);
 	if (c->cmdvec)
@@ -152,6 +163,7 @@ static void new_client(int ux_sock, int non_root_clients)
 		return;
 	}
 	INIT_LIST_HEAD(&c->node);
+	INIT_LIST_HEAD(&c->wait_node);
 	c->fd = fd;
 	c->state = CLT_RECV;
 	c->is_root = _socket_client_is_root(c->fd);
@@ -384,6 +396,21 @@ static int execute_handler(struct client *c, struct vectors *vecs)
 	return c->handler->fn(c->cmdvec, &c->reply, vecs);
 }
 
+int init_wait_fd(void)
+{
+	wait_fd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
+
+	if (wait_fd < 0)
+		return -1;
+	return 0;
+}
+
+void cleanup_wait_fd(void)
+{
+	if (wait_fd >= 0)
+		close(wait_fd);
+}
+
 static void wakeup_listener(int event_fd)
 {
 	uint64_t one = 1;
@@ -395,6 +422,55 @@ static void wakeup_listener(int event_fd)
 static void wakeup_idle_listener(void)
 {
 	wakeup_listener(idle_fd);
+}
+
+void wait_for_event(struct list_head *wait_node, struct list_head *wait_list)
+{
+	pthread_mutex_lock(&client_wait_lock);
+	list_add(wait_node, wait_list);
+	pthread_mutex_unlock(&client_wait_lock);
+}
+
+void wakeup_event_waiter(struct list_head *wait_list)
+{
+	bool have_waiter = false;
+
+	pthread_mutex_lock(&client_wait_lock);
+	while (list_pop(wait_list))
+		have_waiter = true;
+	pthread_mutex_unlock(&client_wait_lock);
+	if (have_waiter)
+		wakeup_listener(wait_fd);
+}
+
+/* must only be called by uxlsnr_thr */
+static void stop_waiting_for_event(struct client *c)
+{
+	/*
+	 * As long as clients will only be added to wait lists by uxlsnr_thr
+	 * and only removed with list_del_init(), it is safe to check if
+	 * wait_node is empty without holding client_wait_lock. uxlsnr_thr
+	 * can't miss a client being added to the list, since a process is
+	 * guaranteed to see all memory changes it did. It can miss a client
+	 * being removed from the list or see a torn write from a concurrent
+	 * removal, but this will just cause it to unnecessarily grab the lock
+	 * and redo the removal.
+	 */
+	if (!list_empty(&c->wait_node)) {
+		pthread_mutex_lock(&client_wait_lock);
+		list_del_init(&c->wait_node);
+		pthread_mutex_unlock(&client_wait_lock);
+	}
+}
+
+static bool finished_waiting(struct client *c)
+{
+	bool ret;
+
+	pthread_mutex_lock(&client_wait_lock);
+	ret = list_empty(&c->wait_node);
+	pthread_mutex_unlock(&client_wait_lock);
+	return ret;
 }
 
 static void drain_event_fd(int event_fd)
@@ -466,8 +542,7 @@ enum {
 	STM_BREAK,
 };
 
-static int client_state_machine(struct client *c, struct vectors *vecs,
-				short revents)
+static int client_state_machine(struct client *c, struct vectors *vecs, int revents)
 {
 	ssize_t n;
 
@@ -549,8 +624,15 @@ static int client_state_machine(struct client *c, struct vectors *vecs,
 			check_for_locked_work(c);
 			pthread_cleanup_pop(1);
 			condlog(4, "%s: cli[%d] grabbed lock", __func__, c->fd);
-			set_client_state(c, CLT_SEND);
-			/* Wait for POLLOUT */
+			/*
+			 * This list_empty() is safe to test without a lock for
+			 * the same reason as in stop_waiting_for_event().
+			 */
+			if (!c->error && !list_empty(&c->wait_node))
+				set_client_state(c, CLT_WAIT);
+			else
+				set_client_state(c, CLT_SEND);
+			/* Wait for POLLOUT or POLLWAIT */
 			return STM_BREAK;
 		} else {
 			condlog(4, "%s: cli[%d] waiting for lock", __func__, c->fd);
@@ -559,8 +641,18 @@ static int client_state_machine(struct client *c, struct vectors *vecs,
 
 	case CLT_WORK:
 		c->error = execute_handler(c, vecs);
-		set_client_state(c, CLT_SEND);
-		/* Wait for POLLOUT */
+		if (!c->error && !list_empty(&c->wait_node))
+			set_client_state(c, CLT_WAIT);
+		else
+			set_client_state(c, CLT_SEND);
+		/* Wait for POLLOUT or POLLWAIT */
+		return STM_BREAK;
+
+	case CLT_WAIT:
+		if (!(revents & POLLWAIT))
+			return STM_BREAK;
+		if (finished_waiting(c))
+			set_client_state(c, CLT_SEND);
 		return STM_BREAK;
 
 	case CLT_SEND:
@@ -617,10 +709,11 @@ static void check_timeout(struct client *c)
 		c->fd, (long)c->expires.tv_sec, c->expires.tv_nsec / 1000000);
 
 	c->error = -ETIMEDOUT;
+	stop_waiting_for_event(c);
 	set_client_state(c, CLT_SEND);
 }
 
-static void handle_client(struct client *c, struct vectors *vecs, short revents)
+static void handle_client(struct client *c, struct vectors *vecs, int revents)
 {
 	if (revents & (POLLHUP|POLLERR)) {
 		c->error = -ECONNRESET;
@@ -677,6 +770,7 @@ void *uxsock_listen(int n_socks, long *ux_sock_in, void *trigger_data)
 	sigdelset(&mask, SIGHUP);
 	sigdelset(&mask, SIGUSR1);
 	while (1) {
+		int wait_event = 0;
 		struct client *c, *tmp;
 		int i, n_pfds, poll_count, num_clients, non_root_clients;
 		struct timespec __timeout, *timeout;
@@ -733,6 +827,9 @@ void *uxsock_listen(int n_socks, long *ux_sock_in, void *trigger_data)
 		else
 			polls[POLLFD_IDLE].events = 0;
 
+		polls[POLLFD_WAIT].fd = wait_fd;
+		polls[POLLFD_WAIT].events = POLLIN;
+
 		/* setup the clients */
 		i = POLLFDS_BASE;
 		list_for_each_entry(c, &clients, node) {
@@ -775,13 +872,18 @@ void *uxsock_listen(int n_socks, long *ux_sock_in, void *trigger_data)
 		    polls[POLLFD_IDLE].revents & POLLIN)
 			drain_event_fd(idle_fd);
 
+		if (polls[POLLFD_WAIT].revents & POLLIN) {
+			drain_event_fd(wait_fd);
+			wait_event = POLLWAIT;
+		}
+
 		/* see if a client needs handling */
 		list_for_each_entry_safe(c, tmp, &clients, node) {
-			short revents = 0;
+			int revents = wait_event;
 
 			for (i = POLLFDS_BASE; i < n_pfds; i++) {
 				if (polls[i].fd == c->fd) {
-					revents = polls[i].revents;
+					revents |= polls[i].revents;
 					break;
 				}
 			}
