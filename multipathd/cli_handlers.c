@@ -1021,7 +1021,7 @@ static int cli_reconfigure(void *v, struct strbuf *reply,
 {
 	condlog(2, "reconfigure (operator)");
 
-	schedule_reconfigure(FORCE_RELOAD_WEAK);
+	schedule_reconfigure(FORCE_RELOAD_WEAK, NULL);
 	return 0;
 }
 
@@ -1030,7 +1030,25 @@ int cli_reconfigure_all(void *v, struct strbuf *reply,
 {
 	condlog(2, "reconfigure all (operator)");
 
-	schedule_reconfigure(FORCE_RELOAD_YES);
+	schedule_reconfigure(FORCE_RELOAD_YES, NULL);
+	return 0;
+}
+
+static int cli_reconfigure_wait(void *v, struct strbuf *reply,
+				struct list_head *wait_node, void *data)
+{
+	condlog(2, "reconfigure wait (operator)");
+
+	schedule_reconfigure(FORCE_RELOAD_WEAK, wait_node);
+	return 0;
+}
+
+static int cli_reconfigure_all_wait(void *v, struct strbuf *reply,
+			            struct list_head *wait_node, void *data)
+{
+	condlog(2, "reconfigure all wait (operator)");
+
+	schedule_reconfigure(FORCE_RELOAD_YES, wait_node);
 	return 0;
 }
 

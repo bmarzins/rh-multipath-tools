@@ -274,13 +274,28 @@ group index, starting with 1.
 .B reconfigure
 Rereads the configuration, and reloads all changed multipath devices. This
 also happens at startup, when the service is reload, or when a SIGHUP is
-received.
+received. This command schedules the reconfiguration and returns immediately.
+.
+.TP
+.B reconfigure wait
+Rereads the configuration, and reloads all changed multipath devices. This
+also happens at startup, when the service is reload, or when a SIGHUP is
+received. This command waits for for the reconfiguration to complete before
+returning
 .
 .TP
 .B reconfigure all
 Rereads the configuration, and reloads all multipath devices regardless of
 whether or not they have changed. This also happens when \fImultipath -r\fR is
-run.
+run. This command schedules the reconfiguration and returns immediately.
+.
+.TP
+.B reconfigure all wait
+Rereads the configuration, and reloads all multipath devices regardless of
+whether or not they have changed. This also happens when \fImultipath -r\fR is
+run. This command waits for for the reconfiguration to complete before
+returning
+.
 .TP
 .B suspend map|multipath $map
 Sets map $map into suspend state.

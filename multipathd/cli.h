@@ -64,6 +64,7 @@ enum {
 	KEY_GROUP		= 82,
 	KEY_KEY			= 83,
 	KEY_PATHLIST		= 84,
+	KEY_WAIT		= 85,
 };
 
 /*
@@ -85,6 +86,7 @@ enum {
 	Q1_ALL			= KEY_ALL << 8,
 	Q1_DAEMON		= KEY_DAEMON << 8,
 	Q1_STATUS		= KEY_STATUS << 8,
+	Q1_WAIT			= KEY_WAIT << 8,
 
 	/* byte 2: qualifier 2 */
 	Q2_FMT			= KEY_FMT << 16,
@@ -97,6 +99,7 @@ enum {
 	Q2_GROUP		= KEY_GROUP << 16,
 	Q2_KEY			= KEY_KEY << 16,
 	Q2_PATHLIST		= KEY_PATHLIST << 16,
+	Q2_WAIT			= KEY_WAIT << 16,
 
 	/* byte 3: qualifier 3 */
 	Q3_FMT			= KEY_FMT << 24,

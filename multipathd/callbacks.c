@@ -44,6 +44,9 @@ void init_handler_callbacks(void)
 	set_unlocked_handler_callback(VRB_RECONFIGURE, HANDLER(cli_reconfigure));
 	set_unlocked_handler_callback(VRB_RECONFIGURE | Q1_ALL,
 				      HANDLER(cli_reconfigure_all));
+	set_unlocked_handler_callback(VRB_RECONFIGURE | Q1_WAIT, HANDLER(cli_reconfigure_wait));
+	set_unlocked_handler_callback(VRB_RECONFIGURE | Q1_ALL | Q2_WAIT,
+				      HANDLER(cli_reconfigure_all_wait));
 	set_handler_callback(VRB_SUSPEND | Q1_MAP, HANDLER(cli_suspend));
 	set_handler_callback(VRB_RESUME | Q1_MAP, HANDLER(cli_resume));
 	set_handler_callback(VRB_RESIZE | Q1_MAP, HANDLER(cli_resize));

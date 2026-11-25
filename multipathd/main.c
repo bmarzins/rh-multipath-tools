@@ -135,6 +135,8 @@ static enum daemon_status running_state = DAEMON_INIT;
 static bool delayed_reconfig;
 /* Don't access this variable without holding config_lock */
 static enum force_reload_types reconfigure_pending = FORCE_RELOAD_NONE;
+/* Don't access this variable without holding config_lock */
+LIST_HEAD(config_wait_list);
 pid_t daemon_pid;
 static pthread_mutex_t config_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t config_cond;
@@ -336,7 +338,8 @@ void remove_map_callback(struct multipath *mpp)
 		unblock_reconfigure();
 }
 
-void schedule_reconfigure(enum force_reload_types requested_type)
+void schedule_reconfigure(enum force_reload_types requested_type,
+			  struct list_head *wait_node)
 {
 	pthread_mutex_lock(&config_lock);
 	pthread_cleanup_push(config_cleanup, NULL);
@@ -360,6 +363,8 @@ void schedule_reconfigure(enum force_reload_types requested_type)
 	default:
 		break;
 	}
+	if (wait_node)
+		wait_for_event(wait_node, &config_wait_list);
 	pthread_cleanup_pop(1);
 }
 
@@ -3657,7 +3662,7 @@ handle_signals(bool nonfatal)
 		return;
 	if (reconfig_sig) {
 		condlog(3, "reconfigure (signal)");
-		schedule_reconfigure(FORCE_RELOAD_WEAK);
+		schedule_reconfigure(FORCE_RELOAD_WEAK, NULL);
 	}
 	if (log_reset_sig) {
 		condlog(3, "reset log (signal)");
@@ -4169,6 +4174,12 @@ child (__attribute__((unused)) void *param)
 			pthread_mutex_unlock(&config_lock);
 
 			rc = reconfigure(vecs, reload_type);
+
+			/* wake up waiters if there are no pending reconfigs */
+			pthread_mutex_lock(&config_lock);
+			if (reconfigure_pending == FORCE_RELOAD_NONE)
+				wakeup_event_waiter(&config_wait_list);
+			pthread_mutex_unlock(&config_lock);
 		} else {
 			pthread_mutex_lock(&config_lock);
 			delayed_reconfig = true;
